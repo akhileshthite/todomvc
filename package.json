@@ -1,0 +1,32 @@
+{
+  "name": "chelonia-todomvc",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "TodoMVC built on Chelonia: a real contract for identity, a KV slot for the todos",
+  "license": "AGPL-3.0",
+  "scripts": {
+    "contracts": "node scripts/build-contracts.mjs",
+    "dev": "npm run contracts && vite build --watch",
+    "build": "npm run contracts && vite build",
+    "serve": "node scripts/chel.mjs serve --dev --port 8000 dist",
+    "start": "npm run build && npm run serve",
+    "lint": "eslint .",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@chelonia/crypto": "1.0.1",
+    "@chelonia/lib": "1.5.0",
+    "@sbp/sbp": "2.4.1",
+    "buffer": "6.0.3",
+    "vue": "3.5.13"
+  },
+  "devDependencies": {
+    "@chelonia/cli": "3.4.0",
+    "@eslint/js": "9.17.0",
+    "@vitejs/plugin-vue": "5.2.1",
+    "eslint": "9.17.0",
+    "eslint-plugin-vue": "9.32.0",
+    "vite": "6.0.7"
+  }
+}
