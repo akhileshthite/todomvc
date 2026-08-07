@@ -17,4 +17,8 @@ chel.toml
 # Task list for the coding agent, see https://github.com/taoeffect/tasks
 .agents/
 
+# Written by `npx skills add`
+.claude/
+skills-lock.json
+
 .DS_Store
