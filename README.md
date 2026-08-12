@@ -152,6 +152,12 @@ sbp('chelonia/kv/defineSlot', {
 })
 ```
 
+`gi.contracts/identity` is Group Income's contract name, but the contract is
+this repo's own, in `src/contracts/identity.js`. chel only lets a contract with
+that exact name be created without an account to bill it to, so an app with its
+own signup has no choice yet. See
+[chel#160](https://github.com/okTurtles/chel/issues/160).
+
 After that every write is a reducer:
 
 ```js

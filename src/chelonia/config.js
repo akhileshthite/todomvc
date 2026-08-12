@@ -3,6 +3,11 @@ import '@chelonia/lib'
 import manifests from '../contracts/manifests.json'
 import './state.js'
 
+// This is Group Income's identity contract name, but the contract is our own,
+// in src/contracts/identity.js. chel only lets a contract with this exact name
+// be created without an account to bill it to, and only registers a username
+// for that type, so an app with its own signup has no choice yet.
+// TODO: rename once okTurtles/chel#160 lands.
 export const CONTRACT_NAME = 'gi.contracts/identity'
 
 // The same chel serve process answers /event, /name, /kv and the pubsub socket.

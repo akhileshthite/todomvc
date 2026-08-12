@@ -110,6 +110,8 @@ async function retrieveSalt (identityContractID, password) {
   return contractSalt
 }
 
+// TODO: replace with the @chelonia/lib selector once okTurtles/libcheloniajs#90
+// lands.
 async function lookupUsername (username) {
   const response = await fetch(`${API_URL}/name/${encodeURIComponent(username)}`)
   if (response.status === 404) return null
@@ -151,6 +153,8 @@ export async function signup ({ username, password }) {
       signingKeyId: keyId(IPK),
       actionSigningKeyId: keyId(CSK),
       actionEncryptionKeyId: keyId(CEK),
+      // TODO: shorten once @chelonia/lib has a helper for building a key set,
+      // okTurtles/libcheloniajs#91.
       keys: [
         {
           id: keyId(IPK),

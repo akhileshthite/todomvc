@@ -34,8 +34,7 @@ await mkdir(at('data'), { recursive: true })
 if (!existsSync(at('chel.toml'))) {
   chel(['init'])
   // chel init defaults to the in-memory backend, which loses every account
-  // when the server restarts. The fs backend needs a case-sensitive
-  // filesystem, which macOS is not by default, so use sqlite.
+  // when the server restarts, so use sqlite.
   const config = await readFile(at('chel.toml'), 'utf8')
   await writeFile(at('chel.toml'), config
     .replace('backend = "mem"', 'backend = "sqlite"')
