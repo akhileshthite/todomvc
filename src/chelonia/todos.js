@@ -1,4 +1,5 @@
 import sbp from '@sbp/sbp'
+import { CHELONIA_KV_VALIDATION_ERROR } from '@chelonia/lib/events'
 import { CONTRACT_NAME } from './config.js'
 import { state } from './state.js'
 import {
@@ -25,6 +26,14 @@ export function defineTodosSlot () {
     // For completeness only. We could omit this since there is a single
     // contract. It is also why login and logout call refreshFilters.
     match: (contractID) => contractID === state.loggedIn?.identityContractID
+  })
+
+  // A value that fails the schema never reaches the app: the mirror keeps the
+  // last good one and the slot goes to 'error'. The UI reads that status; this
+  // is here so the reason is visible while developing.
+  sbp('okTurtles.events/on', CHELONIA_KV_VALIDATION_ERROR, ({ key, reason, error }) => {
+    if (key !== TODOS_KEY) return
+    console.error(`[todomvc] rejected a ${reason} value for '${key}'`, error)
   })
 }
 

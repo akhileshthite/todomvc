@@ -211,6 +211,10 @@ export async function signup ({ username, password }) {
       data: { attributes: { username } }
     })
   } catch (e) {
+    // No way to tell the user why yet. chel sends error bodies as plain text
+    // and publishEvent does `(await r.json()).message`, so the parse throws and
+    // the status is lost: a disabled signup and a rate limit both arrive here
+    // as a JSON SyntaxError.
     throw new AuthError('Could not create the account.', { cause: e })
   } finally {
     sbp('chelonia/clearTransientSecretKeys', [keyId(IPK), keyId(IEK)])

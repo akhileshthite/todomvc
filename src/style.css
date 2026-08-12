@@ -141,7 +141,8 @@ button[type='submit']:disabled { opacity: 0.5; cursor: default; }
 }
 
 .todo-status,
-.todo-error {
+.todo-error,
+.todo-notice {
   margin: 0;
   padding: 10px 16px;
   border-bottom: 1px solid var(--line);
@@ -150,6 +151,11 @@ button[type='submit']:disabled { opacity: 0.5; cursor: default; }
 .todo-status {
   background: var(--surface);
   color: var(--muted);
+}
+
+.todo-notice {
+  background: var(--surface);
+  color: var(--accent);
 }
 
 .toggle-all {
@@ -187,11 +193,21 @@ button[type='submit']:disabled { opacity: 0.5; cursor: default; }
 
 .todo-list li.editing .view { display: none; }
 
+/* The spec reveals .destroy on hover. Keyboard users get it from
+   :focus-within, and pointerless devices always get it. */
 .destroy {
+  visibility: hidden;
   background: var(--surface);
   color: #cc9a9a;
   font-size: 24px;
   line-height: 1;
+}
+
+.todo-list li:hover .destroy,
+.todo-list li:focus-within .destroy { visibility: visible; }
+
+@media (hover: none) {
+  .destroy { visibility: visible; }
 }
 
 .todo-footer {

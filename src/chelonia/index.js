@@ -1,9 +1,11 @@
 import { configureChelonia } from './config.js'
+import { watchConnection } from './connection.js'
 import { persistState } from './state.js'
 import { restoreSession } from './auth.js'
 import { defineTodosSlot } from './todos.js'
 
 export async function startChelonia () {
+  watchConnection()
   await configureChelonia()
   defineTodosSlot()
   persistState()
@@ -11,4 +13,5 @@ export async function startChelonia () {
 }
 
 export { AuthError, currentUsername, login, logout, signup } from './auth.js'
+export { connection } from './connection.js'
 export { state } from './state.js'

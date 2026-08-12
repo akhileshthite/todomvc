@@ -10,6 +10,7 @@ import {
   rename,
   todosStatus
 } from '../chelonia/todos.js'
+import { connection } from '../chelonia/connection.js'
 import { MAX_TITLE_LENGTH, sortedTodos } from '../chelonia/todos-model.js'
 
 const FILTERS = {
@@ -19,6 +20,7 @@ const FILTERS = {
 }
 
 const newTitle = ref('')
+const newTodoInput = ref(null)
 const editingId = ref(null)
 const editTitle = ref('')
 const editInput = ref(null)
@@ -34,6 +36,8 @@ const remaining = computed(() => todos.value.filter((todo) => !todo.completed).l
 // A key that has never been written settles back to 'non-init', so only
 // 'loading' means a fetch is in flight.
 const loading = computed(() => todosStatus() === 'loading')
+// The mirror still holds the last good value, so the list stays on screen.
+const stale = computed(() => todosStatus() === 'error')
 
 function readFilter () {
   const name = window.location.hash.replace(/^#\/?/, '')
@@ -41,7 +45,13 @@ function readFilter () {
 }
 
 const onHashChange = () => { filter.value = readFilter() }
-onMounted(() => window.addEventListener('hashchange', onHashChange))
+
+onMounted(() => {
+  window.addEventListener('hashchange', onHashChange)
+  // The `autofocus` attribute only fires while the page is parsed, and this
+  // component mounts later, after Chelonia has started.
+  newTodoInput.value?.focus()
+})
 onUnmounted(() => window.removeEventListener('hashchange', onHashChange))
 
 // Writes go to the server, so any of them can fail.
@@ -81,6 +91,7 @@ function finishEditing () {
   <section class="todos">
     <header>
       <input
+        ref="newTodoInput"
         v-model="newTitle"
         class="new-todo"
         placeholder="What needs to be done?"
@@ -90,7 +101,14 @@ function finishEditing () {
       >
     </header>
 
+    <p v-if="!connection.online" class="todo-notice">
+      Not connected to the server. Changes will not be saved until it is back.
+    </p>
     <p v-if="error" class="todo-error">{{ error }}</p>
+    <p v-else-if="stale" class="todo-error">
+      The server sent a todo list this app cannot read, so this is the last
+      version it could.
+    </p>
     <p v-else-if="loading" class="todo-status">Loading your todos&hellip;</p>
 
     <template v-if="todos.length">
@@ -133,8 +151,10 @@ function finishEditing () {
       </ul>
 
       <footer class="todo-footer">
-        <span>{{ remaining }} {{ remaining === 1 ? 'item' : 'items' }} left</span>
-        <nav>
+        <span class="todo-count">
+          <strong>{{ remaining }}</strong> {{ remaining === 1 ? 'item' : 'items' }} left
+        </span>
+        <nav class="filters">
           <a href="#/" :class="{ selected: filter === 'all' }">All</a>
           <a href="#/active" :class="{ selected: filter === 'active' }">Active</a>
           <a href="#/completed" :class="{ selected: filter === 'completed' }">Completed</a>
@@ -142,7 +162,7 @@ function finishEditing () {
         <button
           v-if="remaining < todos.length"
           type="button"
-          class="link"
+          class="link clear-completed"
           @click="run(clearCompleted)"
         >
           Clear completed
