@@ -26,10 +26,13 @@ sbp('sbp/selectors/register', {
   'todomvc/state': () => state
 })
 
+let stopWatching = null
+
 // Saving the whole state on every change is fine at this size. An app with
 // large contracts would debounce this or use IndexedDB.
 export function persistState () {
-  watch(state, () => {
+  stopWatching?.()
+  stopWatching = watch(state, () => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
     } catch (e) {
@@ -38,6 +41,10 @@ export function persistState () {
   }, { deep: true, flush: 'post' })
 }
 
+// Stops saving as well as clearing. The watcher runs after the current render,
+// so leaving it on would write the state straight back.
 export function clearSavedState () {
+  stopWatching?.()
+  stopWatching = null
   localStorage.removeItem(STORAGE_KEY)
 }

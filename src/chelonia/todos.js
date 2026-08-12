@@ -59,8 +59,14 @@ const write = (updater) => sbp('chelonia/kv/update', {
   updater
 })
 
+// Not crypto.randomUUID: that needs a secure context, and opening the demo
+// from another machine on http://192.168.x.x is not one.
+const newId = () =>
+  Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) =>
+    b.toString(16).padStart(2, '0')).join('')
+
 export const create = (title) => write(addTodo({
-  id: crypto.randomUUID(),
+  id: newId(),
   // Server time, so a tab with a wrong clock sorts the same as everyone else.
   createdDate: new Date(sbp('chelonia/time')).toISOString(),
   title

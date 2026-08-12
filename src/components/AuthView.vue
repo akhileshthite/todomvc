@@ -38,9 +38,14 @@ async function submit () {
         type="text"
         autocomplete="username"
         required
-        pattern="[A-Za-z0-9\-_]+"
-        title="Letters, numbers, hyphen and underscore"
       >
+      <!-- No `pattern` attribute: it compiles with the regex `v` flag, where
+           the `[_-]` classes in USERNAME_REGEX are a syntax error, and a
+           pattern that fails to compile is dropped without warning. signup()
+           and login() check the same rule in JS instead. -->
+      <small v-if="mode === 'signup'">
+        lowercase letters, numbers, hyphen and underscore
+      </small>
     </label>
 
     <label>

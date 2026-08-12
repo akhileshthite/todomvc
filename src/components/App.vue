@@ -4,7 +4,11 @@ import { currentUsername, logout, state } from '../chelonia/index.js'
 import AuthView from './AuthView.vue'
 import TodoApp from './TodoApp.vue'
 
-const loggedIn = computed(() => !!state.loggedIn)
+const props = defineProps({
+  bootError: { type: Error, default: null }
+})
+
+const loggedIn = computed(() => !props.bootError && !!state.loggedIn)
 const username = computed(() => currentUsername())
 
 async function onLogout () {
@@ -19,7 +23,11 @@ async function onLogout () {
 <template>
   <main class="app">
     <h1>todos</h1>
-    <TodoApp v-if="loggedIn" />
+    <p v-if="bootError" class="boot-error">
+      Could not reach the server. Start it with <code>npm run serve</code> and
+      reload this page.
+    </p>
+    <TodoApp v-else-if="loggedIn" />
     <AuthView v-else />
     <footer v-if="loggedIn" class="session">
       signed in as <strong>{{ username }}</strong>

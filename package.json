@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "TodoMVC built on Chelonia: a real contract for identity, a KV slot for the todos",
-  "license": "AGPL-3.0",
+  "license": "MIT",
   "scripts": {
     "contracts": "node scripts/build-contracts.mjs",
     "dev": "npm run contracts && vite build --watch",

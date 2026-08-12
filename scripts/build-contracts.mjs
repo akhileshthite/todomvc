@@ -48,6 +48,22 @@ if (!existsSync(keyFile)) {
   chel(['keygen', '--out', keyFile, '--pubout', at('.keys/contract-signing-key.pub.json')])
 }
 
+const source = await readFile(at(SOURCE))
+const pinnedDir = at('contracts', CONTRACT_NAME.replace('/', '_'), VERSION)
+const pinnedSource = path.join(pinnedDir, 'identity.js')
+
+// Editing the contract without bumping VERSION would give the same version a
+// new manifest CID. The app would be rebuilt against it while every contract
+// already on the relay still points at the old one, and those accounts would
+// stop loading. Better to say so than to let it happen quietly.
+if (existsSync(pinnedSource) && !source.equals(await readFile(pinnedSource))) {
+  console.error(
+    `${SOURCE} changed but VERSION is still ${VERSION}.\n` +
+    'Bump VERSION in this script, or delete data/ and contracts/ to start fresh.'
+  )
+  process.exit(1)
+}
+
 // chel manifest records the contract by basename and chel deploy resolves it
 // next to the manifest, so both have to be in the same directory.
 await mkdir(buildDir, { recursive: true })
@@ -64,12 +80,7 @@ chel([
 
 chel(['pin', '--overwrite', path.relative(root, manifestFile), VERSION])
 
-const pinned = at(
-  'contracts',
-  CONTRACT_NAME.replace('/', '_'),
-  VERSION,
-  path.basename(manifestFile)
-)
+const pinned = path.join(pinnedDir, path.basename(manifestFile))
 const manifestCID = createCID(await readFile(pinned), multicodes.SHELTER_CONTRACT_MANIFEST)
 
 await writeFile(

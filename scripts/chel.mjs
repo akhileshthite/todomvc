@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 
 const require = createRequire(import.meta.url)
 const CHEL_BIN = require.resolve('@chelonia/cli/bin/chel.js')
@@ -29,6 +30,8 @@ export function chel (args) {
 }
 
 // Allow `node scripts/chel.mjs <args>` as a drop-in for the `chel` command.
-if (process.argv[1] === new URL(import.meta.url).pathname) {
+// fileURLToPath, not URL.pathname: pathname is percent-encoded, so a checkout
+// path containing a space would never match and this would silently do nothing.
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   chel(process.argv.slice(2))
 }

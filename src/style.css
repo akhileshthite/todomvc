@@ -93,8 +93,17 @@ button[type='submit']:disabled { opacity: 0.5; cursor: default; }
 }
 
 .auth-intro { margin: 0 0 4px; color: var(--muted); }
+.auth small { margin-top: -6px; color: var(--muted); }
 .auth-error,
 .todo-error { color: var(--accent); }
+
+.boot-error {
+  margin: 0;
+  padding: 20px;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  color: var(--accent);
+}
 
 /* Todos */
 

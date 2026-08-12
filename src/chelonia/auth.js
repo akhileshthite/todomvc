@@ -28,12 +28,26 @@ import {
   serializeKey
 } from '@chelonia/crypto'
 import { API_URL, CONTRACT_NAME } from './config.js'
-import { clearSavedState, state } from './state.js'
+import { clearSavedState, persistState, state } from './state.js'
 
 export class AuthError extends Error {
   constructor (message, options) {
     super(message, options)
     this.name = 'AuthError'
+  }
+}
+
+// Copied from NAME_REGEX in chel's src/serve/routes.ts. The relay rejects
+// anything else with a 400, so check here first to give a usable message.
+// Lowercase only, cannot start or end with - or _, and no repeated separator.
+const USERNAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/
+
+function assertUsername (username) {
+  if (!USERNAME_REGEX.test(username)) {
+    throw new AuthError(
+      'Usernames can use lowercase letters, numbers, hyphen and underscore, ' +
+      'and cannot start or end with a hyphen or underscore.'
+    )
   }
 }
 
@@ -62,7 +76,13 @@ async function registerSalt (username, password) {
   const r = bytesToB64(keyPair.publicKey).replace(/\//g, '_').replace(/\+/g, '-')
   const path = `/zkpp/register/${encodeURIComponent(username)}`
 
-  const { p, s, sig } = await request(path, form({ b: hash(r) })).then((r) => r.json())
+  // This is where a taken username is caught: the relay looks the name up
+  // before it will issue a registration key.
+  const challenge = await fetch(`${API_URL}${path}`, form({ b: hash(r) }))
+  if (challenge.status === 409) throw new AuthError('That username is already taken.')
+  if (!challenge.ok) throw new AuthError(`Could not start signup: ${challenge.status}`)
+
+  const { p, s, sig } = await challenge.json()
   const [contractSalt, Eh, encryptionKey] =
     await buildRegisterSaltRequest(p, keyPair.secretKey, password)
   const encryptedToken = await request(path, form({ r, s, sig, Eh })).then((r) => r.text())
@@ -98,6 +118,7 @@ async function lookupUsername (username) {
 }
 
 export async function signup ({ username, password }) {
+  assertUsername(username)
   const [contractSalt, saltRegistrationToken] = await registerSalt(username, password)
 
   // Re-derivable at login, so never stored.
@@ -186,7 +207,7 @@ export async function signup ({ username, password }) {
       data: { attributes: { username } }
     })
   } catch (e) {
-    throw new AuthError('Could not create the account. The username may already be taken.', { cause: e })
+    throw new AuthError('Could not create the account.', { cause: e })
   } finally {
     sbp('chelonia/clearTransientSecretKeys', [keyId(IPK), keyId(IEK)])
   }
@@ -200,6 +221,7 @@ export async function signup ({ username, password }) {
 }
 
 export async function login ({ username, password }) {
+  assertUsername(username)
   const identityContractID = await lookupUsername(username)
   if (!identityContractID) throw new AuthError('Incorrect username or password.')
 
@@ -254,8 +276,11 @@ export function currentUsername () {
 }
 
 export async function logout () {
+  // Stop saving before reset churns through the state, then start again for
+  // whoever logs in next.
+  clearSavedState()
   delete state.loggedIn
   await sbp('chelonia/reset', { contracts: {} })
   sbp('chelonia/kv/refreshFilters')
-  clearSavedState()
+  persistState()
 }

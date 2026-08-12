@@ -5,11 +5,22 @@
 **Date**: 2026-08-07
 **Model**: Claude Opus 5
 
+All nine are fixed. Two notes where the fix differs from what is suggested
+below:
+
+- **3**: the suggested `pattern` attribute does not work. HTML compiles
+  `pattern` with the regex `v` flag, and `[_-]` is a syntax error there, so the
+  browser drops the constraint without warning and every username passes.
+  Confirmed in the browser. The rule is checked in JS instead, in
+  `assertUsername`, with a visible hint under the field.
+- **7**: `scripts/build-contracts.mjs` now stops the build when the contract
+  source changed but `VERSION` did not, rather than only documenting it.
+
 ---
 
 ## 1. 🔴 The contract source is not in the repository
 
-- [ ] Addressed
+- [x] Addressed
 - [ ] Dismissed
 
 `.gitignore:7` ignores `contracts/`. A gitignore pattern with a trailing slash
@@ -49,7 +60,7 @@ generated at the root, so `/build/` and `/data/` are more accurate too.
 
 ## 2. 🟡 `npm run serve` silently does nothing if the checkout path has a space
 
-- [ ] Addressed
+- [x] Addressed
 - [ ] Dismissed
 
 `scripts/chel.mjs:32`:
@@ -80,7 +91,7 @@ there is no output at all.
 
 ## 3. 🟡 The signup form accepts usernames the relay rejects
 
-- [ ] Addressed
+- [x] Addressed
 - [ ] Dismissed
 
 `src/components/AuthView.vue:41` validates with `[A-Za-z0-9\-_]+`. chel
@@ -117,7 +128,7 @@ it has to stay in step with chel.
 
 ## 4. 🟡 "The username may already be taken" is attached to the wrong call
 
-- [ ] Addressed
+- [x] Addressed
 - [ ] Dismissed
 
 `src/chelonia/auth.js:189` wraps the failure of
@@ -162,7 +173,7 @@ and at line 189:
 
 ## 5. 🟡 A failed boot shows a logged-in session backed by nothing
 
-- [ ] Addressed
+- [x] Addressed
 - [ ] Dismissed
 
 `src/main.js:6-12` mounts the app in `.finally()`, so the UI comes up whether
@@ -197,7 +208,7 @@ and have `App.vue` render a short "cannot reach the server" message instead of
 
 ## 6. ⚪️ `logout()` can write the state back after clearing it
 
-- [ ] Addressed
+- [x] Addressed
 - [ ] Dismissed
 
 `src/chelonia/auth.js:256-261`:
@@ -235,7 +246,7 @@ during logout.
 
 ## 7. ⚪️ Editing the contract without bumping `VERSION` orphans existing accounts
 
-- [ ] Addressed
+- [x] Addressed
 - [ ] Dismissed
 
 `scripts/build-contracts.mjs:18` pins `VERSION = '1.0.0'`, and line 60 passes
@@ -252,16 +263,19 @@ clean `data/`.
 
 ## 8. ⚪️ `package.json` declares AGPL-3.0 but there is no LICENSE file
 
-- [ ] Addressed
+- [x] Addressed
 - [ ] Dismissed
 
 `package.json:7` sets `"license": "AGPL-3.0"`. There is no `LICENSE` in the
 repo. Since the plan is to move this to okTurtles as an official example, and
 the rest of the ecosystem is AGPL-3.0, add the full text now.
 
+Settled as MIT: `LICENSE` landed in `1ae403c` and `package.json` now matches
+it.
+
 ## 9. ⚪️ `crypto.randomUUID()` is unavailable outside a secure context
 
-- [ ] Addressed
+- [x] Addressed
 - [ ] Dismissed
 
 `src/chelonia/todos.js:63` uses `crypto.randomUUID()`. It only exists in a
