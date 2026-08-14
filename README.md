@@ -87,6 +87,8 @@ Then open <http://localhost:8000/app/>.
 | `npm run serve` | `chel serve --dev dist`, which uploads `contracts/` and serves the app |
 | `npm run dev` | rebuilds on change; run `npm run serve` in another shell |
 | `npm test` | unit tests for the slot schema and the reducers |
+| `npm run test:e2e` | Playwright against a real relay on its own port and database |
+| `npm run test:all` | both |
 
 The first `npm run contracts` also writes two files it does not commit: a
 contract signing key under `.keys/`, and `chel.toml`, which is chel's own

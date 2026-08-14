@@ -12,7 +12,9 @@
     "serve": "node scripts/chel.mjs serve --dev --port 8000 dist",
     "start": "npm run build && npm run serve",
     "lint": "eslint .",
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "test:e2e": "playwright test",
+    "test:all": "npm test && npm run test:e2e"
   },
   "dependencies": {
     "@chelonia/crypto": "1.0.1",
@@ -24,6 +26,7 @@
   "devDependencies": {
     "@chelonia/cli": "3.4.0",
     "@eslint/js": "9.17.0",
+    "@playwright/test": "1.49.1",
     "@vitejs/plugin-vue": "5.2.1",
     "eslint": "9.17.0",
     "eslint-plugin-vue": "9.32.0",
