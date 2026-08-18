@@ -80,6 +80,10 @@ button[type='submit'] {
 
 button[type='submit']:disabled { opacity: 0.5; cursor: default; }
 
+/* Read only while the relay is unreachable. */
+input:disabled,
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .link {
   background: transparent;
   color: var(--muted);

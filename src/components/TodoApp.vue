@@ -38,6 +38,10 @@ const remaining = computed(() => todos.value.filter((todo) => !todo.completed).l
 const loading = computed(() => todosStatus() === 'loading')
 // The mirror still holds the last good value, so the list stays on screen.
 const stale = computed(() => todosStatus() === 'error')
+// Nothing is queued while the relay is unreachable, so a change made now is
+// simply lost. Rather than let people pile up work that gets thrown away, the
+// list goes read only and stays readable.
+const readOnly = computed(() => !connection.online)
 
 function readFilter () {
   const name = window.location.hash.replace(/^#\/?/, '')
@@ -67,12 +71,13 @@ async function run (write) {
 
 function add () {
   const title = newTitle.value.trim()
-  if (!title) return
+  if (!title || readOnly.value) return
   newTitle.value = ''
   run(() => create(title))
 }
 
 function startEditing (todo) {
+  if (readOnly.value) return
   editingId.value = todo.id
   editTitle.value = todo.title
   nextTick(() => editInput.value?.[0]?.focus())
@@ -80,7 +85,9 @@ function startEditing (todo) {
 
 function finishEditing () {
   const id = editingId.value
-  if (id === null) return
+  // Disabling the input fires blur. Keep the edit open and the typing intact
+  // until the connection is back, instead of discarding it.
+  if (id === null || readOnly.value) return
   const title = editTitle.value.trim()
   editingId.value = null
   run(() => (title ? rename(id, title) : destroy(id)))
@@ -96,13 +103,15 @@ function finishEditing () {
         class="new-todo"
         placeholder="What needs to be done?"
         :maxlength="MAX_TITLE_LENGTH"
+        :disabled="readOnly"
         autofocus
         @keyup.enter="add"
       >
     </header>
 
-    <p v-if="!connection.online" class="todo-notice">
-      Not connected to the server. Changes will not be saved until it is back.
+    <p v-if="readOnly" class="todo-notice">
+      Not connected to the server, so the list is read only right now. It will
+      be editable again once the connection is back.
     </p>
     <p v-if="error" class="todo-error">{{ error }}</p>
     <p v-else-if="stale" class="todo-error">
@@ -116,6 +125,7 @@ function finishEditing () {
         <input
           type="checkbox"
           :checked="remaining === 0"
+          :disabled="readOnly"
           @change="run(() => completeAll(remaining !== 0))"
         >
         Mark all as complete
@@ -132,10 +142,18 @@ function finishEditing () {
               class="toggle"
               type="checkbox"
               :checked="todo.completed"
+              :disabled="readOnly"
               @change="run(() => complete(todo.id, !todo.completed))"
             >
             <label @dblclick="startEditing(todo)">{{ todo.title }}</label>
-            <button class="destroy" title="Delete" @click="run(() => destroy(todo.id))">&times;</button>
+            <button
+              class="destroy"
+              title="Delete"
+              :disabled="readOnly"
+              @click="run(() => destroy(todo.id))"
+            >
+              &times;
+            </button>
           </div>
           <input
             v-if="editingId === todo.id"
@@ -143,6 +161,7 @@ function finishEditing () {
             v-model="editTitle"
             class="edit"
             :maxlength="MAX_TITLE_LENGTH"
+            :disabled="readOnly"
             @blur="finishEditing"
             @keyup.enter="finishEditing"
             @keyup.escape="editingId = null"
@@ -163,6 +182,7 @@ function finishEditing () {
           v-if="remaining < todos.length"
           type="button"
           class="link clear-completed"
+          :disabled="readOnly"
           @click="run(clearCompleted)"
         >
           Clear completed

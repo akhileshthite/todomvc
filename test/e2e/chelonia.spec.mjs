@@ -2,7 +2,7 @@
 // go through the KV slot, and two browsers really converge.
 
 import { expect, test } from '@playwright/test'
-import { PASSWORD, addTodo, login, newUsername, signup, titles } from './helpers.mjs'
+import { PASSWORD, addTodo, items, login, newUsername, signup, titles } from './helpers.mjs'
 
 test('a session survives a reload', async ({ page }) => {
   await signup(page)
@@ -68,6 +68,35 @@ test('a username the relay would reject is caught before any request', async ({ 
 
   await expect(page.locator('.auth-error')).toContainText('lowercase letters')
   expect(requested).toBe(false)
+})
+
+test('the list goes read only while the relay is unreachable', async ({ page, context }) => {
+  await signup(page)
+  await addTodo(page, 'written while connected')
+
+  await context.setOffline(true)
+
+  // Nothing is queued, so a change made now would be lost. The controls are
+  // disabled rather than left to fail one by one.
+  await expect(page.locator('.todo-notice')).toContainText('read only')
+  await expect(page.locator('.new-todo')).toBeDisabled()
+  await expect(items(page).first().locator('.toggle')).toBeDisabled()
+  await expect(page.locator('.toggle-all input')).toBeDisabled()
+
+  // Reading still works: the list and the filters are untouched.
+  await expect(titles(page)).toHaveText(['written while connected'])
+  await page.locator('.filters a', { hasText: 'Active' }).click()
+  await expect(titles(page)).toHaveText(['written while connected'])
+
+  await context.setOffline(false)
+
+  await expect(page.locator('.todo-notice')).toBeHidden()
+  await expect(page.locator('.new-todo')).toBeEnabled()
+  await addTodo(page, 'written after reconnecting')
+  await expect(titles(page)).toHaveText([
+    'written while connected',
+    'written after reconnecting'
+  ])
 })
 
 test('two browsers on the same account converge', async ({ browser }) => {
