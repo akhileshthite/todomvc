@@ -1,11 +1,22 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
+import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
 const require = createRequire(import.meta.url)
-const CHEL_BIN = require.resolve('@chelonia/cli/bin/chel.js')
+
+// Take the entry point from the package's own `bin` field instead of assuming
+// where the file lives. Running it cannot be left to PATH or npx: npm creates
+// no node_modules/.bin/chel shim for @chelonia/cli 3.4.0, even though the
+// package declares one.
+const manifestPath = require.resolve('@chelonia/cli/package.json')
+const { bin } = require(manifestPath)
+const CHEL_BIN = path.join(
+  path.dirname(manifestPath),
+  typeof bin === 'string' ? bin : bin.chel
+)
 
 // The @chelonia/cli 3.4.0 binary is compiled with `--allow-write=./`, so it
 // cannot write Deno's plug cache to fetch the SQLite3 library and every command
