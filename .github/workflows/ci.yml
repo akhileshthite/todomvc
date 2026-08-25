@@ -1,5 +1,9 @@
 name: CI
 
+# Same as the other okTurtles repos: the job only reads the checkout.
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main]
