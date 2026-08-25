@@ -22,8 +22,9 @@ const CHEL_BIN = path.join(
 // cannot write Deno's plug cache to fetch the SQLite3 library and every command
 // fails with "Failed to load SQLite3 Dynamic Library". Pointing
 // DENO_SQLITE_PATH at the system library skips the download.
-// TODO: drop this once the published binary has the permission it needs,
-// okTurtles/chel#150.
+// TODO: delete this whole block once a @chelonia/cli release ships
+// okTurtles/chel#162, which replaces the FFI SQLite driver with better-sqlite3
+// and so removes the runtime library load entirely (okTurtles/chel#150).
 //
 // These paths are conventional, not guaranteed, so on Linux take the first one
 // that is actually there. On macOS the system libraries live in the dyld shared

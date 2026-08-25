@@ -15,12 +15,16 @@ import path from 'node:path'
 import process from 'node:process'
 import { chel } from './chel.mjs'
 
-const VERSION = '1.0.0'
 const CONTRACT_NAME = 'gi.contracts/identity'
 const SOURCE = 'src/contracts/identity.js'
 
 const root = path.resolve(import.meta.dirname, '..')
 const at = (...p) => path.join(root, ...p)
+
+// One version to bump instead of two. The contract is pinned under this, so
+// changing it re-pins the contract under a new version and any account created
+// against the old one keeps using the old manifest.
+const VERSION = JSON.parse(await readFile(at('package.json'), 'utf8')).version
 
 const keyFile = at('.keys/contract-signing-key.json')
 const buildDir = at('build/contracts')

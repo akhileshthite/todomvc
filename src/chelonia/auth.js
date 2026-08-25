@@ -40,6 +40,8 @@ export class AuthError extends Error {
 // Copied from NAME_REGEX in chel's src/serve/routes.ts. The relay rejects
 // anything else with a 400, so check here first to give a usable message.
 // Lowercase only, cannot start or end with - or _, and no repeated separator.
+// TODO: drop this once a @chelonia/cli release makes the rule available
+// instead of having to be copied.
 const USERNAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/
 
 function assertUsername (username) {
