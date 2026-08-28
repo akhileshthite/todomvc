@@ -1,6 +1,7 @@
 import sbp from '@sbp/sbp'
 import { CHELONIA_KV_VALIDATION_ERROR } from '@chelonia/lib/events'
-import { CONTRACT_NAME } from './config.js'
+import { LIST_CONTRACT_NAME } from './config.js'
+import { currentLists } from './lists.js'
 import { state } from './state.js'
 import {
   addTodo,
@@ -19,13 +20,21 @@ const NO_TODOS = Object.freeze({})
 // mirror, schema validation and the conflict retries.
 export function defineTodosSlot () {
   sbp('chelonia/kv/defineSlot', {
-    contractType: CONTRACT_NAME,
+    contractType: LIST_CONTRACT_NAME,
     key: TODOS_KEY,
     defaultValue: {},
     schema: todosSchema,
-    // For completeness only. We could omit this since there is a single
-    // contract. It is also why login and logout call refreshFilters.
-    match: (contractID) => contractID === state.loggedIn?.identityContractID
+    // Attaches to every list this account is in, but only once we hold that
+    // list's keys. Between accepting an invite and the owner answering it there
+    // is nothing here we could read or write: /kv/:contractID/:key is
+    // authorized with the contract's own #sak.
+    //
+    // Nothing re-runs this by hand when the keys finally arrive. Chelonia marks
+    // the contract dirty on OP_KEY_SHARE and resyncs it, and a resync drops and
+    // re-adds the subscription, which is what reconciles the slots again.
+    match: (contractID, contractState) =>
+      currentLists().includes(contractID) &&
+      !!sbp('chelonia/contract/currentKeyIdByName', contractState, '#sak', true)
   })
 
   // A value that fails the schema never reaches the app: the mirror keeps the
@@ -37,33 +46,24 @@ export function defineTodosSlot () {
   })
 }
 
-function currentContractID () {
-  const identityContractID = state.loggedIn?.identityContractID
-  if (!identityContractID) throw new Error('Not logged in')
-  return identityContractID
-}
-
 // Reading `entry.value` is what makes a Vue computed re-run when Chelonia
 // updates the mirror. The value itself comes from the selector, which
 // substitutes the declared default. See "Consumer caveats" in docs/kv.md.
-export function currentTodos () {
-  const entry = mirrorEntry()
+export function currentTodos (contractID) {
+  const entry = mirrorEntry(contractID)
   if (!entry) return NO_TODOS
-  return entry.value ?? sbp('chelonia/kv/read', currentContractID(), TODOS_KEY)
+  return entry.value ?? sbp('chelonia/kv/read', contractID, TODOS_KEY)
 }
 
 // 'non-init' | 'loading' | 'loaded' | 'error'
-export function todosStatus () {
-  return mirrorEntry()?.status ?? 'non-init'
+export function todosStatus (contractID) {
+  return mirrorEntry(contractID)?.status ?? 'non-init'
 }
 
-function mirrorEntry () {
-  const identityContractID = state.loggedIn?.identityContractID
-  return identityContractID && state._kv?.[identityContractID]?.[TODOS_KEY]
-}
+const mirrorEntry = (contractID) => contractID && state._kv?.[contractID]?.[TODOS_KEY]
 
-const write = (updater) => sbp('chelonia/kv/update', {
-  contractID: currentContractID(),
+const write = (contractID, updater) => sbp('chelonia/kv/update', {
+  contractID,
   key: TODOS_KEY,
   updater
 })
@@ -74,15 +74,17 @@ const newId = () =>
   Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) =>
     b.toString(16).padStart(2, '0')).join('')
 
-export const create = (title) => write(addTodo({
+export const create = (contractID, title) => write(contractID, addTodo({
   id: newId(),
   // Server time, so a tab with a wrong clock sorts the same as everyone else.
   createdDate: new Date(sbp('chelonia/time')).toISOString(),
   title
 }))
 
-export const complete = (id, completed) => write(setCompleted(id, completed))
-export const rename = (id, title) => write(setTitle(id, title))
-export const destroy = (id) => write(removeTodo(id))
-export const completeAll = (completed) => write(setAllCompleted(completed))
-export const clearCompleted = () => write(removeCompleted())
+export const complete = (contractID, id, completed) =>
+  write(contractID, setCompleted(id, completed))
+export const rename = (contractID, id, title) => write(contractID, setTitle(id, title))
+export const destroy = (contractID, id) => write(contractID, removeTodo(id))
+export const completeAll = (contractID, completed) =>
+  write(contractID, setAllCompleted(completed))
+export const clearCompleted = (contractID) => write(contractID, removeCompleted())

@@ -28,7 +28,10 @@ import {
   serializeKey
 } from '@chelonia/crypto'
 import { API_URL, CONTRACT_NAME } from './config.js'
+import { createList, loadLists } from './lists.js'
 import { clearSavedState, persistState, state } from './state.js'
+
+const DEFAULT_LIST_TITLE = 'My todos'
 
 export class AuthError extends Error {
   constructor (message, options) {
@@ -227,6 +230,9 @@ export async function signup ({ username, password }) {
   const identityContractID = message.contractID()
   await sbp('chelonia/contract/retain', [identityContractID])
   await enterSession(identityContractID)
+  // Todos live on a list contract, so an account with no list has nowhere to
+  // put them.
+  await createList(DEFAULT_LIST_TITLE)
   return identityContractID
 }
 
@@ -268,6 +274,7 @@ export async function restoreSession () {
     await sbp('chelonia/contract/retain', [identityContractID])
   }
   sbp('chelonia/kv/refreshFilters')
+  await loadLists(identityContractID)
   return identityContractID
 }
 
@@ -276,6 +283,7 @@ async function enterSession (identityContractID) {
   // The slot's `match` reads loggedIn, which Chelonia cannot watch.
   sbp('chelonia/kv/refreshFilters')
   await sbp('chelonia/contract/wait', [identityContractID])
+  await loadLists(identityContractID)
 }
 
 // Read from the contract state rather than kept alongside the session, so

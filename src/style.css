@@ -71,14 +71,16 @@ button {
   cursor: pointer;
 }
 
-button[type='submit'] {
+button[type='submit'],
+button.primary {
   padding: 12px;
   background: var(--accent);
   color: var(--surface);
   border-radius: 3px;
 }
 
-button[type='submit']:disabled { opacity: 0.5; cursor: default; }
+button[type='submit']:disabled,
+button.primary:disabled { opacity: 0.5; cursor: default; }
 
 /* Read only while the relay is unreachable. */
 input:disabled,
@@ -131,6 +133,108 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .boot-error {
   margin: 0;
   padding: 20px;
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* Joining a shared list */
+
+.join {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.join h2 { margin: 0; font-size: 18px; font-weight: 400; }
+.join p { margin: 0; background: var(--surface); color: var(--muted); }
+.join-error { background: var(--surface); color: var(--accent); }
+
+/* Lists */
+
+.lists {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.list-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.list-tabs button {
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.list-tabs button.selected {
+  border-color: rgba(175, 47, 47, 0.2);
+  background: var(--surface);
+  color: var(--fg);
+}
+
+.list-new {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.list-new input {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 14px;
+}
+
+.list-new button[type='submit'] { padding: 6px 12px; }
+
+.list-rename {
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  font-size: 14px;
+}
+
+.list-invite { margin-top: 10px; }
+
+.list-invite label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.list-invite input {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.list-invite p {
+  margin: 6px 0 0;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.list-error {
+  margin: 10px 0 0;
+  background: var(--surface);
+  color: var(--accent);
+}
+
+.list-pending {
+  margin: 0;
+  padding: 14px 16px;
   background: var(--surface);
   color: var(--accent);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);

@@ -10,6 +10,10 @@ import './state.js'
 // TODO: rename once okTurtles/chel#160 lands.
 export const CONTRACT_NAME = 'gi.contracts/identity'
 
+// A list is created by an identity, so the relay knows which account to bill it
+// to and the name is ours to pick.
+export const LIST_CONTRACT_NAME = 'todomvc/list'
+
 // The same chel serve process answers /event, /name, /kv and the pubsub socket.
 export const API_URL = window.location.origin
 

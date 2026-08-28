@@ -1,12 +1,12 @@
-// Prepares src/contracts/identity.js for both the server and the app:
+// Prepares the contracts in src/contracts/ for both the server and the app:
 //
 //   chel init / keygen   once, for chel.toml and the signing key
-//   chel manifest        signs the contract
+//   chel manifest        signs a contract
 //   chel pin             copies it into contracts/<name>/<version>/, where
 //                        chel serve looks for contracts to upload
 //   createCID            the manifest CID, written to src/contracts/manifests.json
 //
-// The app passes that CID to chelonia/configure as contracts.manifests.
+// The app passes those CIDs to chelonia/configure as contracts.manifests.
 
 import { createCID, multicodes } from '@chelonia/lib/functions'
 import { existsSync } from 'node:fs'
@@ -15,21 +15,25 @@ import path from 'node:path'
 import process from 'node:process'
 import { chel } from './chel.mjs'
 
-const CONTRACT_NAME = 'gi.contracts/identity'
-const SOURCE = 'src/contracts/identity.js'
+const CONTRACTS = [
+  // The identity contract has to be called this: chel only accepts a contract
+  // created without an account to bill it to when the manifest name is exactly
+  // that. See okTurtles/chel#160.
+  { name: 'gi.contracts/identity', file: 'identity.js' },
+  // A list is created by an identity, so it is attributed and its name is free.
+  { name: 'todomvc/list', file: 'list.js' }
+]
 
 const root = path.resolve(import.meta.dirname, '..')
 const at = (...p) => path.join(root, ...p)
 
-// One version to bump instead of two. The contract is pinned under this, so
-// changing it re-pins the contract under a new version and any account created
+// One version to bump instead of one per contract. Contracts are pinned under
+// this, so changing it re-pins them under a new version and any account created
 // against the old one keeps using the old manifest.
 const VERSION = JSON.parse(await readFile(at('package.json'), 'utf8')).version
 
 const keyFile = at('.keys/contract-signing-key.json')
 const buildDir = at('build/contracts')
-const contractCopy = path.join(buildDir, 'identity.js')
-const manifestFile = path.join(buildDir, `identity.${VERSION}.manifest.json`)
 
 process.chdir(root)
 
@@ -51,44 +55,55 @@ if (!existsSync(keyFile)) {
   chel(['keygen', '--out', keyFile, '--pubout', at('.keys/contract-signing-key.pub.json')])
 }
 
-const source = await readFile(at(SOURCE))
-const pinnedDir = at('contracts', CONTRACT_NAME.replace('/', '_'), VERSION)
-const pinnedSource = path.join(pinnedDir, 'identity.js')
-
-// Editing the contract without bumping VERSION would give the same version a
-// new manifest CID. The app would be rebuilt against it while every contract
-// already on the relay still points at the old one, and those accounts would
-// stop loading. Better to say so than to let it happen quietly.
-if (existsSync(pinnedSource) && !source.equals(await readFile(pinnedSource))) {
-  console.error(
-    `${SOURCE} changed but VERSION is still ${VERSION}.\n` +
-    'Bump VERSION in this script, or delete data/ and contracts/ to start fresh.'
-  )
-  process.exit(1)
-}
-
-// chel manifest records the contract by basename and chel deploy resolves it
-// next to the manifest, so both have to be in the same directory.
 await mkdir(buildDir, { recursive: true })
-await copyFile(at(SOURCE), contractCopy)
 
-chel([
-  'manifest',
-  '--name', CONTRACT_NAME,
-  '--contract-version', VERSION,
-  '--out', manifestFile,
-  keyFile,
-  contractCopy
-])
+const manifests = {}
 
-chel(['pin', '--overwrite', path.relative(root, manifestFile), VERSION])
+for (const { name, file } of CONTRACTS) {
+  const sourcePath = at('src/contracts', file)
+  const source = await readFile(sourcePath)
+  const pinnedDir = at('contracts', name.replace('/', '_'), VERSION)
+  const pinnedSource = path.join(pinnedDir, file)
 
-const pinned = path.join(pinnedDir, path.basename(manifestFile))
-const manifestCID = createCID(await readFile(pinned), multicodes.SHELTER_CONTRACT_MANIFEST)
+  // Editing a contract without bumping the version would give the same version
+  // a new manifest CID. The app would be rebuilt against it while every
+  // contract already on the relay still points at the old one, and those
+  // accounts would stop loading. Better to say so than to let it happen
+  // quietly.
+  if (existsSync(pinnedSource) && !source.equals(await readFile(pinnedSource))) {
+    console.error(
+      `src/contracts/${file} changed but the version is still ${VERSION}.\n` +
+      'Bump "version" in package.json, or delete data/ and contracts/ to start fresh.'
+    )
+    process.exit(1)
+  }
+
+  // chel manifest records the contract by basename and chel deploy resolves it
+  // next to the manifest, so both have to be in the same directory.
+  const contractCopy = path.join(buildDir, file)
+  const manifestFile = path.join(buildDir, `${path.parse(file).name}.${VERSION}.manifest.json`)
+  await copyFile(sourcePath, contractCopy)
+
+  chel([
+    'manifest',
+    '--name', name,
+    '--contract-version', VERSION,
+    '--out', manifestFile,
+    keyFile,
+    contractCopy
+  ])
+
+  chel(['pin', '--overwrite', path.relative(root, manifestFile), VERSION])
+
+  const pinned = path.join(pinnedDir, path.basename(manifestFile))
+  manifests[name] = createCID(await readFile(pinned), multicodes.SHELTER_CONTRACT_MANIFEST)
+}
 
 await writeFile(
   at('src/contracts/manifests.json'),
-  JSON.stringify({ manifests: { [CONTRACT_NAME]: manifestCID } }, null, 2) + '\n'
+  JSON.stringify({ manifests }, null, 2) + '\n'
 )
 
-console.log(`${CONTRACT_NAME} -> ${manifestCID}`)
+for (const [name, cid] of Object.entries(manifests)) {
+  console.log(`${name} -> ${cid}`)
+}

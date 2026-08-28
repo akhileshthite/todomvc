@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
   clearCompleted,
   complete,
@@ -12,6 +12,10 @@ import {
 } from '../chelonia/todos.js'
 import { connection } from '../chelonia/connection.js'
 import { MAX_TITLE_LENGTH, sortedTodos } from '../chelonia/todos-model.js'
+
+const props = defineProps({
+  listId: { type: String, required: true }
+})
 
 const FILTERS = {
   all: () => true,
@@ -29,15 +33,15 @@ const error = ref('')
 
 // currentTodos() reads Chelonia's KV mirror, which lives in the reactive root
 // state, so this recomputes on a local write and on a push from another tab
-// alike. There is nothing to subscribe to.
-const todos = computed(() => sortedTodos(currentTodos()))
+// or another account alike. There is nothing to subscribe to.
+const todos = computed(() => sortedTodos(currentTodos(props.listId)))
 const visible = computed(() => todos.value.filter(FILTERS[filter.value]))
 const remaining = computed(() => todos.value.filter((todo) => !todo.completed).length)
 // A key that has never been written settles back to 'non-init', so only
 // 'loading' means a fetch is in flight.
-const loading = computed(() => todosStatus() === 'loading')
+const loading = computed(() => todosStatus(props.listId) === 'loading')
 // The mirror still holds the last good value, so the list stays on screen.
-const stale = computed(() => todosStatus() === 'error')
+const stale = computed(() => todosStatus(props.listId) === 'error')
 // Nothing is queued while the relay is unreachable, so a change made now is
 // simply lost. Rather than let people pile up work that gets thrown away, the
 // list goes read only and stays readable.
@@ -58,6 +62,9 @@ onMounted(() => {
 })
 onUnmounted(() => window.removeEventListener('hashchange', onHashChange))
 
+// Switching lists leaves the old list's edit open over the new one's todos.
+watch(() => props.listId, () => { editingId.value = null })
+
 // Writes go to the server, so any of them can fail.
 async function run (write) {
   error.value = ''
@@ -73,7 +80,7 @@ function add () {
   const title = newTitle.value.trim()
   if (!title || readOnly.value) return
   newTitle.value = ''
-  run(() => create(title))
+  run(() => create(props.listId, title))
 }
 
 function startEditing (todo) {
@@ -90,7 +97,7 @@ function finishEditing () {
   if (id === null || readOnly.value) return
   const title = editTitle.value.trim()
   editingId.value = null
-  run(() => (title ? rename(id, title) : destroy(id)))
+  run(() => (title ? rename(props.listId, id, title) : destroy(props.listId, id)))
 }
 </script>
 
@@ -126,7 +133,7 @@ function finishEditing () {
           type="checkbox"
           :checked="remaining === 0"
           :disabled="readOnly"
-          @change="run(() => completeAll(remaining !== 0))"
+          @change="run(() => completeAll(listId, remaining !== 0))"
         >
         Mark all as complete
       </label>
@@ -143,14 +150,14 @@ function finishEditing () {
               type="checkbox"
               :checked="todo.completed"
               :disabled="readOnly"
-              @change="run(() => complete(todo.id, !todo.completed))"
+              @change="run(() => complete(listId, todo.id, !todo.completed))"
             >
             <label @dblclick="startEditing(todo)">{{ todo.title }}</label>
             <button
               class="destroy"
               title="Delete"
               :disabled="readOnly"
-              @click="run(() => destroy(todo.id))"
+              @click="run(() => destroy(listId, todo.id))"
             >
               &times;
             </button>
@@ -183,7 +190,7 @@ function finishEditing () {
           type="button"
           class="link clear-completed"
           :disabled="readOnly"
-          @click="run(clearCompleted)"
+          @click="run(() => clearCompleted(listId))"
         >
           Clear completed
         </button>

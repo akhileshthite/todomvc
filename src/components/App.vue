@@ -1,7 +1,10 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { currentUsername, logout, state } from '../chelonia/index.js'
+import { currentLists, listIsPending, readInvite } from '../chelonia/lists.js'
 import AuthView from './AuthView.vue'
+import JoinView from './JoinView.vue'
+import ListsBar from './ListsBar.vue'
 import TodoApp from './TodoApp.vue'
 
 const props = defineProps({
@@ -10,6 +13,29 @@ const props = defineProps({
 
 const loggedIn = computed(() => !props.bootError && !!state.loggedIn)
 const username = computed(() => currentUsername())
+const lists = computed(() => currentLists())
+const invite = ref(readInvite())
+const selected = ref(null)
+
+// A list that was just joined has no keys yet, so nothing about it can be read.
+const pending = computed(() => !!selected.value && listIsPending(selected.value))
+
+// Lists arrive after login and can arrive later still, when another tab adds
+// one or an invite is answered.
+watch(lists, (contractIDs) => {
+  if (!contractIDs.includes(selected.value)) selected.value = contractIDs[0] ?? null
+}, { immediate: true })
+
+// Show what was just joined, even though there is nothing in it until the
+// owner answers.
+function onJoined (contractID) {
+  invite.value = null
+  if (contractID) selected.value = contractID
+}
+
+const onHashChange = () => { invite.value = readInvite() }
+onMounted(() => window.addEventListener('hashchange', onHashChange))
+onUnmounted(() => window.removeEventListener('hashchange', onHashChange))
 
 async function onLogout () {
   try {
@@ -27,8 +53,18 @@ async function onLogout () {
       Could not reach the server. Start it with <code>npm run serve</code> and
       reload this page.
     </p>
-    <TodoApp v-else-if="loggedIn" />
-    <AuthView v-else />
+    <template v-else-if="loggedIn">
+      <JoinView v-if="invite" :invite="invite" @done="onJoined" />
+      <template v-else>
+        <ListsBar v-model="selected" :lists="lists" />
+        <p v-if="pending" class="list-pending">
+          Waiting for whoever shared this list to answer. They have to be online
+          with the app open; nothing on the server can answer for them.
+        </p>
+        <TodoApp v-else-if="selected" :list-id="selected" />
+      </template>
+    </template>
+    <AuthView v-else :invited="!!invite" />
     <footer v-if="loggedIn" class="session">
       signed in as <strong>{{ username }}</strong>
       <button type="button" class="link" @click="onLogout">log out</button>

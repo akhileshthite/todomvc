@@ -2,6 +2,12 @@
 import { ref } from 'vue'
 import { AuthError, login, signup } from '../chelonia/index.js'
 
+defineProps({
+  // Arrived on an invite link, so say what the account is for before asking
+  // for one.
+  invited: { type: Boolean, default: false }
+})
+
 const mode = ref('login')
 const username = ref('')
 const password = ref('')
@@ -26,6 +32,10 @@ async function submit () {
 
 <template>
   <form class="auth" @submit.prevent="submit">
+    <p v-if="invited" class="auth-intro">
+      Someone shared a todo list with you. Log in or create an account, and the
+      invite carries on from there.
+    </p>
     <p class="auth-intro">
       Your keys are generated in this browser. The todos are encrypted before
       they reach the server.
