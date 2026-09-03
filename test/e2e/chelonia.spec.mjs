@@ -31,6 +31,31 @@ test('logging out clears the browser, logging back in recovers the todos', async
   await expect(titles(page)).toHaveText(['recovered from the contract'])
 })
 
+// The other tab keeps the whole session in memory with its saving watcher
+// still armed, so without the storage listener its next write would put the
+// keys back and a reload would be logged in again.
+test('logging out in one tab does not let another tab save the session back',
+  async ({ context }) => {
+    const one = await context.newPage()
+    await signup(one)
+    await addTodo(one, 'written before logging out')
+
+    const two = await context.newPage()
+    await two.goto('/app/')
+    await expect(titles(two)).toHaveText(['written before logging out'])
+
+    await one.getByRole('button', { name: 'log out' }).click()
+    await expect(one.locator('.auth')).toBeVisible()
+
+    // The second tab drops the session as soon as it sees the key go.
+    await expect(two.locator('.auth')).toBeVisible()
+
+    await two.reload()
+    await expect(two.locator('.auth')).toBeVisible()
+    const saved = await two.evaluate(() => localStorage.getItem('todomvc/chelonia-state'))
+    expect(saved).toBeNull()
+  })
+
 test('a wrong password and an unknown user look the same', async ({ page }) => {
   const username = await signup(page)
   await page.getByRole('button', { name: 'log out' }).click()
@@ -41,6 +66,18 @@ test('a wrong password and an unknown user look the same', async ({ page }) => {
   await page.reload()
   await login(page, newUsername())
   await expect(page.locator('.auth-error')).toHaveText('Incorrect username or password.')
+})
+
+// A wrong password comes back as a 500 from the zkpp routes, so the two have to
+// be told apart by whether the server answered at all.
+test('a login that never reaches the server says so', async ({ page }) => {
+  const username = await signup(page)
+  await page.getByRole('button', { name: 'log out' }).click()
+
+  await page.route('**/name/**', (route) => route.abort('connectionfailed'))
+  await login(page, username)
+
+  await expect(page.locator('.auth-error')).toContainText('Could not reach the server')
 })
 
 test('a taken username is reported as taken', async ({ page }) => {

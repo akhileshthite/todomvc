@@ -28,7 +28,7 @@ import {
   serializeKey
 } from '@chelonia/crypto'
 import { API_URL, CONTRACT_NAME } from './config.js'
-import { createList, loadLists } from './lists.js'
+import { createList, loadLists, retainOrSync } from './lists.js'
 import { clearSavedState, persistState, state } from './state.js'
 
 const DEFAULT_LIST_TITLE = 'My todos'
@@ -37,6 +37,9 @@ export class AuthError extends Error {
   constructor (message, options) {
     super(message, options)
     this.name = 'AuthError'
+    // Login turns most failures into "incorrect username or password". This
+    // marks the ones whose message is already the right one.
+    this.exact = !!options?.exact
   }
 }
 
@@ -50,14 +53,27 @@ const USERNAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/
 function assertUsername (username) {
   if (!USERNAME_REGEX.test(username)) {
     throw new AuthError(
-      'Usernames can use lowercase letters, numbers, hyphen and underscore, ' +
-      'and cannot start or end with a hyphen or underscore.'
+      'Usernames can use lowercase letters, numbers, hyphen and underscore, up ' +
+      'to 80 characters. They cannot start or end with a hyphen or underscore, ' +
+      'or use the same one twice in a row.'
     )
   }
 }
 
+// A rejected fetch means the request never got an answer. Any status, even a
+// 500, means the server did answer.
+async function send (path, init) {
+  try {
+    return await fetch(`${API_URL}${path}`, init)
+  } catch (e) {
+    throw new AuthError('Could not reach the server. Check your connection.', {
+      cause: e, exact: true
+    })
+  }
+}
+
 async function request (path, init) {
-  const response = await fetch(`${API_URL}${path}`, init)
+  const response = await send(path, init)
   if (!response.ok) {
     throw new AuthError(`${init?.method ?? 'GET'} ${path} failed: ${response.status}`)
   }
@@ -78,12 +94,12 @@ const toBase64url = (bytes) => base64ToBase64url(bytesToB64(bytes))
 // never the password.
 async function registerSalt (username, password) {
   const keyPair = boxKeyPair()
-  const r = bytesToB64(keyPair.publicKey).replace(/\//g, '_').replace(/\+/g, '-')
+  const r = toBase64url(keyPair.publicKey)
   const path = `/zkpp/register/${encodeURIComponent(username)}`
 
   // This is where a taken username is caught: the relay looks the name up
   // before it will issue a registration key.
-  const challenge = await fetch(`${API_URL}${path}`, form({ b: hash(r) }))
+  const challenge = await send(path, form({ b: hash(r) }))
   if (challenge.status === 409) throw new AuthError('That username is already taken.')
   if (!challenge.ok) throw new AuthError(`Could not start signup: ${challenge.status}`)
 
@@ -118,7 +134,7 @@ async function retrieveSalt (identityContractID, password) {
 // TODO: replace with the @chelonia/lib selector once okTurtles/libcheloniajs#90
 // lands.
 async function lookupUsername (username) {
-  const response = await fetch(`${API_URL}/name/${encodeURIComponent(username)}`)
+  const response = await send(`/name/${encodeURIComponent(username)}`)
   if (response.status === 404) return null
   if (!response.ok) throw new AuthError(`Username lookup failed: ${response.status}`)
   return response.text()
@@ -246,6 +262,10 @@ export async function login ({ username, password }) {
     const contractSalt = await retrieveSalt(identityContractID, password)
     IEK = await deriveKeyFromPassword(CURVE25519XSALSA20POLY1305, password, contractSalt)
   } catch (e) {
+    console.error('[todomvc] could not prove the password', e)
+    // chel answers a bad proof with a 500, so any status here just means the
+    // proof failed. Only a request that got no answer is a different problem.
+    if (e instanceof AuthError && e.exact) throw e
     throw new AuthError('Incorrect username or password.', { cause: e })
   }
 
@@ -266,13 +286,7 @@ export async function restoreSession () {
   const identityContractID = state.loggedIn?.identityContractID
   if (!identityContractID) return null
 
-  // The saved state already carries a reference, so retaining again on every
-  // reload would leak one.
-  if (state.contracts?.[identityContractID]?.references) {
-    await sbp('chelonia/contract/sync', [identityContractID])
-  } else {
-    await sbp('chelonia/contract/retain', [identityContractID])
-  }
+  await retainOrSync(identityContractID)
   sbp('chelonia/kv/refreshFilters')
   await loadLists(identityContractID)
   return identityContractID
@@ -298,7 +312,11 @@ export async function logout () {
   // whoever logs in next.
   clearSavedState()
   delete state.loggedIn
-  await sbp('chelonia/reset', { contracts: {} })
-  sbp('chelonia/kv/refreshFilters')
-  persistState()
+  try {
+    await sbp('chelonia/reset', { contracts: {} })
+    sbp('chelonia/kv/refreshFilters')
+  } finally {
+    // Even if reset failed, or the next login would save nothing.
+    persistState()
+  }
 }

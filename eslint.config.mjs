@@ -2,7 +2,13 @@ import js from '@eslint/js'
 import vue from 'eslint-plugin-vue'
 
 export default [
-  { ignores: ['dist/', 'build/', 'contracts/', 'node_modules/'] },
+  {
+    ignores: [
+      'dist/', 'build/', 'contracts/', 'node_modules/',
+      // Playwright output, gitignored but still linted otherwise.
+      'playwright-report/', 'test-results/'
+    ]
+  },
   js.configs.recommended,
   ...vue.configs['flat/recommended'],
   {

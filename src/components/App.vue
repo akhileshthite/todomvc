@@ -15,22 +15,24 @@ const loggedIn = computed(() => !props.bootError && !!state.loggedIn)
 const username = computed(() => currentUsername())
 const lists = computed(() => currentLists())
 const invite = ref(readInvite())
-const selected = ref(null)
+const selectedListId = ref(null)
 
 // A list that was just joined has no keys yet, so nothing about it can be read.
-const pending = computed(() => !!selected.value && listIsPending(selected.value))
+const pending = computed(() => !!selectedListId.value && listIsPending(selectedListId.value))
 
 // Lists arrive after login and can arrive later still, when another tab adds
 // one or an invite is answered.
 watch(lists, (contractIDs) => {
-  if (!contractIDs.includes(selected.value)) selected.value = contractIDs[0] ?? null
+  if (!contractIDs.includes(selectedListId.value)) {
+    selectedListId.value = contractIDs[0] ?? null
+  }
 }, { immediate: true })
 
 // Show what was just joined, even though there is nothing in it until the
-// owner answers.
+// owner answers. Nothing is passed when the invite was declined.
 function onJoined (contractID) {
   invite.value = null
-  if (contractID) selected.value = contractID
+  if (typeof contractID === 'string') selectedListId.value = contractID
 }
 
 const onHashChange = () => { invite.value = readInvite() }
@@ -56,12 +58,12 @@ async function onLogout () {
     <template v-else-if="loggedIn">
       <JoinView v-if="invite" :invite="invite" @done="onJoined" />
       <template v-else>
-        <ListsBar v-model="selected" :lists="lists" />
+        <ListsBar v-model="selectedListId" :lists="lists" :pending="pending" />
         <p v-if="pending" class="list-pending">
           Waiting for whoever shared this list to answer. They have to be online
           with the app open; nothing on the server can answer for them.
         </p>
-        <TodoApp v-else-if="selected" :list-id="selected" />
+        <TodoApp v-else-if="selectedListId" :list-id="selectedListId" />
       </template>
     </template>
     <AuthView v-else :invited="!!invite" />

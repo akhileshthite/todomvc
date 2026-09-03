@@ -16,7 +16,7 @@ async function join () {
   try {
     done(await acceptInvite(props.invite))
   } catch (e) {
-    error.value = 'Could not join that list. The invite may have been used already.'
+    error.value = 'Could not join. The invite may be used up, or the server is unreachable.'
     console.error('[todomvc] join failed', e)
   } finally {
     busy.value = false
@@ -42,6 +42,7 @@ function done (contractID = null) {
     <button type="button" class="primary" :disabled="busy" @click="join">
       Join the list
     </button>
-    <button type="button" class="link" @click="done">No thanks</button>
+    <!-- done(), not done: a method handler is called with the click event. -->
+    <button type="button" class="link" @click="done()">No thanks</button>
   </section>
 </template>

@@ -1,13 +1,13 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
-  clearCompleted,
-  complete,
-  completeAll,
-  create,
+  clearCompletedTodos,
+  completeAllTodos,
+  createTodo,
   currentTodos,
-  destroy,
-  rename,
+  destroyTodo,
+  renameTodo,
+  setTodoCompleted,
   todosStatus
 } from '../chelonia/todos.js'
 import { connection } from '../chelonia/connection.js'
@@ -80,7 +80,7 @@ function add () {
   const title = newTitle.value.trim()
   if (!title || readOnly.value) return
   newTitle.value = ''
-  run(() => create(props.listId, title))
+  run(() => createTodo(props.listId, title))
 }
 
 function startEditing (todo) {
@@ -97,7 +97,7 @@ function finishEditing () {
   if (id === null || readOnly.value) return
   const title = editTitle.value.trim()
   editingId.value = null
-  run(() => (title ? rename(props.listId, id, title) : destroy(props.listId, id)))
+  run(() => (title ? renameTodo(props.listId, id, title) : destroyTodo(props.listId, id)))
 }
 </script>
 
@@ -133,7 +133,7 @@ function finishEditing () {
           type="checkbox"
           :checked="remaining === 0"
           :disabled="readOnly"
-          @change="run(() => completeAll(listId, remaining !== 0))"
+          @change="run(() => completeAllTodos(listId, remaining !== 0))"
         >
         Mark all as complete
       </label>
@@ -150,14 +150,14 @@ function finishEditing () {
               type="checkbox"
               :checked="todo.completed"
               :disabled="readOnly"
-              @change="run(() => complete(listId, todo.id, !todo.completed))"
+              @change="run(() => setTodoCompleted(listId, todo.id, !todo.completed))"
             >
             <label @dblclick="startEditing(todo)">{{ todo.title }}</label>
             <button
               class="destroy"
               title="Delete"
               :disabled="readOnly"
-              @click="run(() => destroy(listId, todo.id))"
+              @click="run(() => destroyTodo(listId, todo.id))"
             >
               &times;
             </button>
@@ -190,7 +190,7 @@ function finishEditing () {
           type="button"
           class="link clear-completed"
           :disabled="readOnly"
-          @click="run(() => clearCompleted(listId))"
+          @click="run(() => clearCompletedTodos(listId))"
         >
           Clear completed
         </button>

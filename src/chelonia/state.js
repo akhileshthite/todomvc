@@ -30,6 +30,9 @@ let stopWatching = null
 
 // Saving the whole state on every change is fine at this size. An app with
 // large contracts would debounce this or use IndexedDB.
+//
+// Note this writes `secretKeys` in the clear. Fine for a demo, not for a real
+// app: Group Income keeps the same state in an encrypted database.
 export function persistState () {
   stopWatching?.()
   stopWatching = watch(state, () => {
@@ -48,3 +51,12 @@ export function clearSavedState () {
   stopWatching = null
   localStorage.removeItem(STORAGE_KEY)
 }
+
+// Another tab logged out. This one still has the session and its watcher, so
+// its next save would put the keys back. Drop the session here too.
+window.addEventListener('storage', (e) => {
+  if (e.key !== STORAGE_KEY || e.newValue !== null) return
+  stopWatching?.()
+  stopWatching = null
+  delete state.loggedIn
+})

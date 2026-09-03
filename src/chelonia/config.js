@@ -1,6 +1,6 @@
 import sbp from '@sbp/sbp'
 import '@chelonia/lib'
-import manifests from '../contracts/manifests.json'
+import manifestsFile from '../contracts/manifests.json'
 import './state.js'
 
 // This is Group Income's identity contract name, but the contract is our own,
@@ -24,7 +24,7 @@ export async function configureChelonia () {
     contracts: {
       // manifests.json is written by `npm run contracts`. Chelonia refuses to
       // load a contract whose manifest CID is not listed here.
-      ...manifests,
+      manifests: manifestsFile.manifests,
       defaults: {
         // The contract calls no selectors, so nothing needs allowing through.
         allowedSelectors: [],

@@ -1,12 +1,8 @@
 // Lists: creating one, sharing it, joining one that was shared.
 //
-// A list is its own contract, and that is the whole reason sharing works. Keys
-// belong to a contract, and OP_KEY_SHARE is how a contract's keys move from one
-// account to another. The todos of a list are a KV slot on the list contract,
-// so two accounts holding the same keys read and write the same slot.
-//
-// The identity contract keeps one slot of its own, `lists`, with the IDs of the
-// lists this account is in.
+// A list is its own contract because keys belong to a contract, and
+// OP_KEY_SHARE is how they move between accounts. The identity contract keeps a
+// `lists` slot with the IDs of the lists this account is in.
 
 import sbp from '@sbp/sbp'
 import { Secret } from '@chelonia/lib/Secret'
@@ -55,18 +51,15 @@ export function currentLists () {
   return entry.value ?? sbp('chelonia/kv/read', identityContractID, LISTS_KEY)
 }
 
-// Read from the list contract, so it is the same for everyone sharing it. It is
-// missing until the key request is answered, because the action carrying it is
-// encrypted to the list's own key.
+// From the list contract, so everyone sharing it sees the same title. Missing
+// until the key request is answered: the action carrying it is encrypted.
 export const listTitle = (contractID) => state[contractID]?.attributes?.title
 
-// No title means no keys, which is the state a list is in between accepting an
-// invite and the owner answering it.
+// No title means no keys yet.
 export const listIsPending = (contractID) => !listTitle(contractID)
 
-// The lists slot loads on its own after a sync, but a reload starts with the
-// saved mirror already holding the right value, and an unchanged value is not
-// an update. So the first read after logging in is done here instead.
+// The slot loads itself after a sync, but a reload starts with the saved mirror
+// already right, and an unchanged value is not an update. So force one read.
 export async function loadLists (identityContractID) {
   try {
     await sbp('chelonia/kv/sync', identityContractID, LISTS_KEY)
@@ -76,16 +69,17 @@ export async function loadLists (identityContractID) {
   await openLists()
 }
 
+// A reload starts with the reference already in the saved state, so retaining
+// again would leak one.
+export const retainOrSync = (contractID) =>
+  state.contracts?.[contractID]?.references
+    ? sbp('chelonia/contract/sync', [contractID])
+    : sbp('chelonia/contract/retain', [contractID])
+
 async function openLists (contractIDs = currentLists()) {
   for (const contractID of contractIDs) {
     try {
-      // The saved state already carries a reference after a reload, and
-      // retaining again on every reload would leak one.
-      if (state.contracts?.[contractID]?.references) {
-        await sbp('chelonia/contract/sync', [contractID])
-      } else {
-        await sbp('chelonia/contract/retain', [contractID])
-      }
+      await retainOrSync(contractID)
     } catch (e) {
       console.error(`[todomvc] could not open list ${contractID}`, e)
     }
@@ -114,9 +108,8 @@ export async function createList (title) {
   // registerContract signs OP_CONTRACT with a key Chelonia already holds.
   sbp('chelonia/storeSecretKeys', new Secret([{ key: CSK }, { key: CEK }, { key: SAK }]))
 
-  // Every secret is encrypted to the list's own CEK. That is what makes handing
-  // the list over one operation: whoever gets the CEK can read the rest of the
-  // keys straight out of the contract.
+  // Everything is encrypted to the list's own CEK, so handing over the CEK
+  // hands over the rest.
   const secret = (key) => encryptedOutgoingDataWithRawKey(CEK, serializeKey(key, true))
 
   const message = await sbp('chelonia/out/registerContract', {
@@ -156,10 +149,8 @@ export async function createList (title) {
         ringLevel: 0,
         permissions: [],
         allowedActions: [],
-        // Shared as well, because /kv/:contractID/:key is authorized with the
-        // contract's own #sak and nothing else can read or write the todos. It
-        // reaches no further than this list: deleting a contract is checked
-        // against the account that pays for it, which stays the creator.
+        // Shared too: /kv is authorized with the contract's own #sak. Scoped
+        // to this list, since deletion is checked against the paying account.
         meta: { private: { content: secret(SAK), shareable: true } },
         data: serializeKey(SAK, false)
       }
@@ -174,10 +165,8 @@ export async function createList (title) {
   return contractID
 }
 
-// The same keys again, written into our own identity contract. Logging in on
-// another machine replays that log, so this is how the list comes back without
-// the browser it was made in. It is the operation an invite performs, aimed at
-// ourselves.
+// The same keys into our own identity contract, so a login on another machine
+// gets them back. An invite, aimed at ourselves.
 async function shareWithSelf (identityContractID, contractID, keys) {
   const identityState = state[identityContractID]
   const CEKid = keyIdByName(identityState, 'cek')
@@ -207,9 +196,7 @@ const addToLists = (identityContractID, contractID) => sbp('chelonia/kv/update',
   updater: addList(contractID)
 })
 
-// The title is an action, not a slot: it is small, it is written rarely, and
-// every client having the same log of who renamed the list to what is worth
-// more here than the last value alone.
+// An action, not a slot: renames are rare and the history is worth keeping.
 export const renameList = (contractID, title) => sbp('chelonia/out/actionEncrypted', {
   action: `${LIST_CONTRACT_NAME}/rename`,
   contractID,
@@ -218,10 +205,8 @@ export const renameList = (contractID, title) => sbp('chelonia/out/actionEncrypt
   encryptionKeyId: keyIdByName(contractID, 'cek')
 })
 
-// Mints a key whose only power is to sign one OP_KEY_REQUEST against this list,
-// and puts its secret in the fragment of a URL so the relay never sees it.
-// Reuses the invite already on the contract while it is still good, so sharing
-// the same list twice does not leave a trail of unused keys.
+// A key that can only sign one OP_KEY_REQUEST for this list. The secret goes in
+// the URL fragment, which browsers never send. Reuses a still-valid invite.
 export async function inviteToList (contractID) {
   const listState = state[contractID]
   const now = sbp('chelonia/time')
@@ -275,9 +260,8 @@ export function readInvite (hash = window.location.hash) {
 
 export const clearInvite = () => { window.location.hash = '#/' }
 
-// Publishes the key request. Nothing is readable yet when this resolves: the
-// list owner has to be online to answer it, and the answer is a second message
-// that can arrive in a later session.
+// Publishes the key request. Nothing is readable when this resolves: the owner
+// has to be online to answer, and the answer can land in a later session.
 export async function acceptInvite ({ contractID, secret }) {
   const identityContractID = requireIdentity()
   if (currentLists().includes(contractID)) return contractID
@@ -285,23 +269,27 @@ export async function acceptInvite ({ contractID, secret }) {
   const inviteKey = deserializeKey(secret)
   // Transient: it signs one message and is not ours to keep.
   sbp('chelonia/storeSecretKeys', new Secret([{ key: inviteKey, transient: true }]))
-  // Syncs the list too, which is where the public key the request is encrypted
-  // to comes from.
-  await sbp('chelonia/contract/retain', [contractID])
+  try {
+    // Syncs the list too, which is where the public key the request is
+    // encrypted to comes from.
+    await sbp('chelonia/contract/retain', [contractID])
 
-  const identityState = state[identityContractID]
-  await sbp('chelonia/out/keyRequest', {
-    originatingContractID: identityContractID,
-    originatingContractName: CONTRACT_NAME,
-    contractID,
-    contractName: LIST_CONTRACT_NAME,
-    signingKeyId: keyId(inviteKey),
-    innerSigningKeyId: keyIdByName(identityState, 'csk'),
-    encryptionKeyId: keyIdByName(identityState, 'cek'),
-    innerEncryptionKeyId: keyIdByName(state[contractID], 'cek'),
-    // Keeps the relay from seeing which two contracts are being connected.
-    encryptKeyRequestMetadata: true
-  })
+    const identityState = state[identityContractID]
+    await sbp('chelonia/out/keyRequest', {
+      originatingContractID: identityContractID,
+      originatingContractName: CONTRACT_NAME,
+      contractID,
+      contractName: LIST_CONTRACT_NAME,
+      signingKeyId: keyId(inviteKey),
+      innerSigningKeyId: keyIdByName(identityState, 'csk'),
+      encryptionKeyId: keyIdByName(identityState, 'cek'),
+      innerEncryptionKeyId: keyIdByName(state[contractID], 'cek'),
+      // Keeps the relay from seeing which two contracts are being connected.
+      encryptKeyRequestMetadata: true
+    })
+  } finally {
+    sbp('chelonia/clearTransientSecretKeys', [keyId(inviteKey)])
+  }
 
   // Recorded now rather than when the keys arrive, so a reload still knows to
   // keep the list open and wait for the answer.

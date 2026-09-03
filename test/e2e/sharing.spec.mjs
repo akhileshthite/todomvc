@@ -185,6 +185,32 @@ test('an invite is good once', async ({ browser }) => {
   }
 })
 
+test('declining an invite leaves the current list selected', async ({ browser }) => {
+  const ownerContext = await browser.newContext()
+  const guestContext = await browser.newContext()
+  const owner = await ownerContext.newPage()
+  const guest = await guestContext.newPage()
+
+  try {
+    await signup(owner)
+    const link = await inviteLink(owner)
+
+    await guest.goto('/app/')
+    await signup(guest)
+    await addTodo(guest, 'my own todo')
+    await guest.goto(link)
+    await guest.getByRole('button', { name: 'No thanks' }).click()
+
+    // Back on the guest's own list, not on a waiting screen.
+    await expect(tabs(guest)).toHaveText(['My todos'])
+    await expect(guest.locator('.list-pending')).toBeHidden()
+    await expect(titles(guest)).toHaveText(['my own todo'])
+  } finally {
+    await ownerContext.close()
+    await guestContext.close()
+  }
+})
+
 test('an account with no lists starts with none and can make one', async ({ page }) => {
   await signup(page, newUsername())
 

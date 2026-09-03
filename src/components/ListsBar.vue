@@ -1,18 +1,14 @@
 <script setup>
 import { computed, nextTick, ref } from 'vue'
-import {
-  createList,
-  inviteToList,
-  listIsPending,
-  listTitle,
-  renameList
-} from '../chelonia/lists.js'
+import { createList, inviteToList, listTitle, renameList } from '../chelonia/lists.js'
 import { connection } from '../chelonia/connection.js'
 import { MAX_TITLE_LENGTH } from '../chelonia/todos-model.js'
 
 const props = defineProps({
   lists: { type: Array, required: true },
-  modelValue: { type: String, default: null }
+  modelValue: { type: String, default: null },
+  // Owned by App, which also renders the waiting message.
+  pending: { type: Boolean, default: false }
 })
 const emit = defineEmits(['update:modelValue'])
 
@@ -26,7 +22,6 @@ const error = ref('')
 
 const readOnly = computed(() => !connection.online || busy.value)
 const titleOf = (contractID) => listTitle(contractID) ?? 'Waiting for keys'
-const pending = computed(() => !!props.modelValue && listIsPending(props.modelValue))
 
 async function run (write) {
   error.value = ''
@@ -56,7 +51,7 @@ async function share () {
 }
 
 function startEditing () {
-  if (readOnly.value || pending.value) return
+  if (readOnly.value || props.pending) return
   editing.value = true
   editTitle.value = listTitle(props.modelValue)
   nextTick(() => editInput.value?.select())

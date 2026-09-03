@@ -16,7 +16,7 @@ JavaScript implementation: [`@chelonia/lib`](https://www.npmjs.com/package/@chel
 is the client library and [`@chelonia/cli`](https://www.npmjs.com/package/@chelonia/cli)
 (the `chel` command) is the tooling and the server.
 
-Seven words you need before reading the code.
+Seven terms you need before reading the code.
 
 **Relay.** The server. It stores messages, relays them to whoever is
 subscribed, and answers a few HTTP routes. It checks that a message chain is
@@ -240,12 +240,15 @@ full in `src/chelonia/auth.js`.
 **Reload** does none of that. The keys and the contract state are already in
 the saved blob, so it only re-syncs.
 
+That blob is plain JSON in `localStorage`, secret keys included. Fine for a
+local demo, wrong for anything real. Group Income keeps the same state in an
+encrypted settings database.
+
 ### Sharing a list
 
-The relay cannot grant anyone access, because it holds no keys. The only way to
-let a second account into a list is for the first account's browser to hand the
-list's keys over, and the protocol operation for that is `OP_KEY_SHARE`. Read
-`src/chelonia/lists.js` alongside this.
+The relay holds no keys, so it cannot grant access. The first account's browser
+has to hand the list's keys over, and `OP_KEY_SHARE` is the operation for it.
+The code is in `src/chelonia/lists.js`.
 
 **Creating a list**
 
@@ -255,10 +258,9 @@ gets its own `csk`, `cek` and `#sak`, each stored in the contract encrypted to
 the list's own `cek` and marked `shareable: true`. That flag is what an invite
 hands over.
 
-Then the same three keys are sent to the creator's *own* identity contract with
-`chelonia/out/keyShare`, encrypted to the identity's `cek`. Without that step
-the creator would lose the list on logging out: their list keys would only exist
-in that browser. Logging in replays the identity log and the keys come back.
+The same three keys then go to the creator's *own* identity contract with
+`chelonia/out/keyShare`, encrypted to the identity's `cek`. Without that they
+would only exist in that browser and logging out would lose the list.
 
 **Inviting**
 
@@ -277,21 +279,19 @@ reload does not lose it.
 
 **Answering**
 
-Chelonia does this part by itself. When the list owner's client processes the
-`OP_KEY_REQUEST` it queues `chelonia/private/respondToAllKeyRequests`, which
-replies with every key marked `shareable`, addressed to the joiner's identity
-contract. Nothing in this app is involved, and nothing on the relay can stand in
-for it: **the owner has to be online with the app open.** Until they are, the
-request sits on the contract and the joiner sees the list waiting.
+Chelonia does this part by itself. The owner's client processes the
+`OP_KEY_REQUEST` and queues `chelonia/private/respondToAllKeyRequests`, which
+replies with every key marked `shareable`. No app code is involved, and the
+relay cannot stand in: **the owner has to be online with the app open.** Until
+then the request sits on the contract and the joiner sees the list waiting.
 
-When the keys land, Chelonia marks the list contract dirty and re-syncs it. That
-drops and re-adds the subscription, `match` runs again, and the todos slot
-attaches. From then on both accounts are writing the same slot on the same
-contract, and converge exactly the way two windows of one account do.
+When the keys land, Chelonia marks the list contract dirty and re-syncs it,
+which drops and re-adds the subscription, so `match` runs again and the todos
+slot attaches. Both accounts then write the same slot and converge like two
+windows of one account.
 
-Sharing the list's `#sak` is what lets the other account read and write
-`/kv/<list>/todos` at all. It reaches no further than that list: deleting a
-contract is checked against the account that pays for it, which stays the
+The shared `#sak` is what allows `/kv/<list>/todos` at all. It goes no further
+than this list: deletion is checked against the paying account, still the
 creator.
 
 **If you made an account before lists existed**, its todos were a slot on the

@@ -44,10 +44,17 @@ if (!existsSync(at('chel.toml'))) {
   // chel init defaults to the in-memory backend, which loses every account
   // when the server restarts, so use sqlite.
   const config = await readFile(at('chel.toml'), 'utf8')
-  await writeFile(at('chel.toml'), config
+  const sqlite = config
     .replace('backend = "mem"', 'backend = "sqlite"')
     .replace('# [database.backendOptions.sqlite]\n# filepath = "data/chelonia.db"',
-      '[database.backendOptions.sqlite]\nfilepath = "data/chelonia.db"'))
+      '[database.backendOptions.sqlite]\nfilepath = "data/chelonia.db"')
+  // Fail loudly if chel changed its template, instead of serving from a
+  // half-edited config.
+  if (!sqlite.includes('filepath = "data/chelonia.db"') || sqlite.includes('backend = "mem"')) {
+    console.error('chel.toml is not what this script expects. Edit it by hand:\n' + sqlite)
+    process.exit(1)
+  }
+  await writeFile(at('chel.toml'), sqlite)
 }
 
 if (!existsSync(keyFile)) {

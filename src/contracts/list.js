@@ -1,17 +1,10 @@
-// A todo list.
+// A todo list. Almost empty for the same reason as the identity contract: the
+// todos live in a KV slot, and the contract is what owns the keys and scopes
+// `/kv/:contractID/:key`. An invite shares these keys, so two accounts write
+// the same slot.
 //
-// Like the identity contract this is almost empty, and for the same reason: the
-// todos live in a KV slot, and what the contract provides is the thing KV
-// cannot, an object on the server that owns keys and scopes
-// `/kv/:contractID/:key`.
-//
-// The difference is who can read it. This contract's keys can be shared with
-// another account through an invite, so two people end up writing the same
-// slot.
-//
-// The name is free here, unlike the identity contract. A list is created by an
-// identity, so the message is attributed and never reaches chel's
-// unattributed-first-message path.
+// The name is free here. A list is created by an identity, so it is attributed
+// and never hits chel's unattributed-first-message path.
 
 // Same cap as the todos, in MAX_TITLE_LENGTH. Contracts run in a sandbox with
 // no imports, so it is repeated rather than shared.

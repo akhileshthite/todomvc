@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "description": "TodoMVC built on Chelonia: a real contract for identity, a KV slot for the todos",
   "license": "MIT",
   "scripts": {

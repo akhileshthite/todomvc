@@ -24,14 +24,9 @@ export function defineTodosSlot () {
     key: TODOS_KEY,
     defaultValue: {},
     schema: todosSchema,
-    // Attaches to every list this account is in, but only once we hold that
-    // list's keys. Between accepting an invite and the owner answering it there
-    // is nothing here we could read or write: /kv/:contractID/:key is
-    // authorized with the contract's own #sak.
-    //
-    // Nothing re-runs this by hand when the keys finally arrive. Chelonia marks
-    // the contract dirty on OP_KEY_SHARE and resyncs it, and a resync drops and
-    // re-adds the subscription, which is what reconciles the slots again.
+    // Every list we are in, but only once we hold its keys: /kv is authorized
+    // with the contract's own #sak. Nothing re-runs this when they arrive.
+    // OP_KEY_SHARE resyncs the contract, and that reconciles the slots.
     match: (contractID, contractState) =>
       currentLists().includes(contractID) &&
       !!sbp('chelonia/contract/currentKeyIdByName', contractState, '#sak', true)
@@ -74,17 +69,17 @@ const newId = () =>
   Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) =>
     b.toString(16).padStart(2, '0')).join('')
 
-export const create = (contractID, title) => write(contractID, addTodo({
+export const createTodo = (contractID, title) => write(contractID, addTodo({
   id: newId(),
   // Server time, so a tab with a wrong clock sorts the same as everyone else.
   createdDate: new Date(sbp('chelonia/time')).toISOString(),
   title
 }))
 
-export const complete = (contractID, id, completed) =>
+export const setTodoCompleted = (contractID, id, completed) =>
   write(contractID, setCompleted(id, completed))
-export const rename = (contractID, id, title) => write(contractID, setTitle(id, title))
-export const destroy = (contractID, id) => write(contractID, removeTodo(id))
-export const completeAll = (contractID, completed) =>
+export const renameTodo = (contractID, id, title) => write(contractID, setTitle(id, title))
+export const destroyTodo = (contractID, id) => write(contractID, removeTodo(id))
+export const completeAllTodos = (contractID, completed) =>
   write(contractID, setAllCompleted(completed))
-export const clearCompleted = (contractID) => write(contractID, removeCompleted())
+export const clearCompletedTodos = (contractID) => write(contractID, removeCompleted())
