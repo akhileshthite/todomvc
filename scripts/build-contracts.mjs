@@ -16,9 +16,9 @@ import process from 'node:process'
 import { chel } from './chel.mjs'
 
 const CONTRACTS = [
-  // The identity contract has to be called this: chel only accepts a contract
-  // created without an account to bill it to when the manifest name is exactly
-  // that. See okTurtles/chel#160.
+  // TODO: rename once the fix for okTurtles/chel#160 is merged and released.
+  // Until then chel only accepts a contract created without an account to bill
+  // it to when the manifest name is exactly this.
   { name: 'gi.contracts/identity', file: 'identity.js' },
   // A list is created by an identity, so it is attributed and its name is free.
   { name: 'todomvc/list', file: 'list.js' }
@@ -27,9 +27,10 @@ const CONTRACTS = [
 const root = path.resolve(import.meta.dirname, '..')
 const at = (...p) => path.join(root, ...p)
 
-// One version to bump instead of one per contract. Contracts are pinned under
-// this, so changing it re-pins them under a new version and any account created
-// against the old one keeps using the old manifest.
+// Single version source-of-truth
+// Updating version in package.json will allow pinning to automatically
+// choose the new version.
+// Any account created with an old version keeps using the old manifest.
 const VERSION = JSON.parse(await readFile(at('package.json'), 'utf8')).version
 
 const keyFile = at('.keys/contract-signing-key.json')
