@@ -1,0 +1,351 @@
+/* Every rule that sets `color` also sets `background`, and the other way
+   round, so a custom background or text colour on the user's side cannot
+   leave text unreadable. */
+
+:root {
+  --bg: #f5f5f5;
+  --surface: #fff;
+  --fg: #4d4d4d;
+  --muted: #9a9a9a;
+  --faint: #d9d9d9;
+  --line: #ededed;
+  --accent: #af5b5e;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0 1rem 4rem;
+  background: var(--bg);
+  color: var(--fg);
+  font: 14px/1.4em 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.app {
+  max-width: 550px;
+  margin: 0 auto;
+}
+
+h1 {
+  margin: 0 0 24px;
+  padding: 0.6em 0 0.2em;
+  background: var(--bg);
+  color: rgba(175, 47, 47, 0.15);
+  font-size: 80px;
+  font-weight: 200;
+  text-align: center;
+}
+
+input[type='text'],
+input[type='password'],
+.new-todo,
+.edit {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--fg);
+  font: inherit;
+  font-size: 18px;
+}
+
+.new-todo,
+.edit {
+  border: none;
+  box-shadow: inset 0 -2px 1px rgba(0, 0, 0, 0.03);
+}
+
+.new-todo::placeholder {
+  background: var(--surface);
+  color: var(--muted);
+  font-style: italic;
+}
+
+button {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+button[type='submit'],
+button.primary {
+  padding: 12px;
+  background: var(--accent);
+  color: var(--surface);
+  border-radius: 3px;
+}
+
+button[type='submit']:disabled,
+button.primary:disabled { opacity: 0.5; cursor: default; }
+
+/* Read only while the server is unreachable. */
+input:disabled,
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.link {
+  background: transparent;
+  color: var(--muted);
+  text-decoration: underline;
+}
+
+/* Auth */
+
+.auth {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.auth label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.auth-intro {
+  margin: 0 0 4px;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.auth small {
+  margin-top: -6px;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.auth-error,
+.todo-error {
+  background: var(--surface);
+  color: var(--accent);
+}
+
+.boot-error {
+  margin: 0;
+  padding: 20px;
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* Joining a shared list */
+
+.join {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.join h2 { margin: 0; font-size: 18px; font-weight: 400; }
+.join p { margin: 0; background: var(--surface); color: var(--muted); }
+.join-error { background: var(--surface); color: var(--accent); }
+
+/* Lists */
+
+.lists {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.list-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.list-tabs button {
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.list-tabs button.selected {
+  border-color: rgba(175, 47, 47, 0.2);
+  background: var(--surface);
+  color: var(--fg);
+}
+
+.list-new {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.list-new input {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 14px;
+}
+
+.list-new button[type='submit'] { padding: 6px 12px; }
+
+.list-rename {
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  font-size: 14px;
+}
+
+.list-invite { margin-top: 10px; }
+
+.list-invite label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.list-invite input {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.list-invite p {
+  margin: 6px 0 0;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.list-error {
+  margin: 10px 0 0;
+  background: var(--surface);
+  color: var(--accent);
+}
+
+.list-pending {
+  margin: 0;
+  padding: 14px 16px;
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* Todos */
+
+.todos {
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.todo-status,
+.todo-error,
+.todo-notice {
+  margin: 0;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.todo-status {
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.todo-notice {
+  background: var(--surface);
+  color: var(--accent);
+}
+
+.toggle-all {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.todo-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.todo-list li { border-bottom: 1px solid var(--line); }
+
+.todo-list .view {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.todo-list label { flex: 1; word-break: break-word; }
+
+.todo-list li.completed label {
+  background: var(--surface);
+  color: var(--faint);
+  text-decoration: line-through;
+}
+
+.todo-list li.editing .view { display: none; }
+
+/* The spec reveals .destroy on hover. Keyboard users get it from
+   :focus-within, and pointerless devices always get it. */
+.destroy {
+  visibility: hidden;
+  background: var(--surface);
+  color: #cc9a9a;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.todo-list li:hover .destroy,
+.todo-list li:focus-within .destroy { visibility: visible; }
+
+@media (hover: none) {
+  .destroy { visibility: visible; }
+}
+
+.todo-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.todo-footer nav { display: flex; gap: 8px; }
+
+.todo-footer a {
+  padding: 3px 7px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.todo-footer a.selected { border-color: rgba(175, 47, 47, 0.2); }
+
+.session {
+  padding: 12px 4px;
+  background: var(--bg);
+  color: var(--muted);
+  text-align: center;
+}
+
+.session .link { background: var(--bg); margin-left: 8px; }
