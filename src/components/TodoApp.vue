@@ -42,7 +42,7 @@ const remaining = computed(() => todos.value.filter((todo) => !todo.completed).l
 const loading = computed(() => todosStatus(props.listId) === 'loading')
 // The mirror still holds the last good value, so the list stays on screen.
 const stale = computed(() => todosStatus(props.listId) === 'error')
-// Nothing is queued while the relay is unreachable, so a change made now is
+// Nothing is queued while the server is unreachable, so a change made now is
 // simply lost. Rather than let people pile up work that gets thrown away, the
 // list goes read only and stays readable.
 const readOnly = computed(() => !connection.online)

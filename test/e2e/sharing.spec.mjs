@@ -31,7 +31,7 @@ test('a second account joins a list and both edit it', async ({ browser }) => {
     await expect(guest.locator('.join')).toContainText('shared a todo list with you')
     await guest.getByRole('button', { name: 'Join the list' }).click()
 
-    // The owner's browser answers the key request. Nothing on the relay can.
+    // The owner's browser answers the key request. Nothing on the server can.
     await expect(tabs(guest)).toHaveText(['My todos', 'My todos'])
     await expect(titles(guest)).toHaveText(['from the owner'])
 

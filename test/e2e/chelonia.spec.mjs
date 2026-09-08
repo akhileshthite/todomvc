@@ -1,4 +1,4 @@
-// The Chelonia half: an account really exists on the relay, the todos really
+// The Chelonia half: an account really exists on the server, the todos really
 // go through the KV slot, and two browsers really converge.
 
 import { expect, test } from '@playwright/test'
@@ -92,7 +92,7 @@ test('a taken username is reported as taken', async ({ page }) => {
   await expect(page.locator('.auth-error')).toHaveText('That username is already taken.')
 })
 
-test('a username the relay would reject is caught before any request', async ({ page }) => {
+test('a username the server would reject is caught before any request', async ({ page }) => {
   await page.goto('/app/')
   await page.getByRole('button', { name: 'Create an account' }).click()
 
@@ -107,7 +107,7 @@ test('a username the relay would reject is caught before any request', async ({ 
   expect(requested).toBe(false)
 })
 
-test('the list goes read only while the relay is unreachable', async ({ page, context }) => {
+test('the list goes read only while the server is unreachable', async ({ page, context }) => {
   await signup(page)
   await addTodo(page, 'written while connected')
 
@@ -155,7 +155,7 @@ test('two browsers on the same account converge', async ({ browser }) => {
 
     // Force the collision instead of hoping the two writes happen to overlap:
     // hold browser one's write back so browser two's lands first. Browser one
-    // is then writing against an etag the relay has already moved past, which
+    // is then writing against an etag the server has already moved past, which
     // is the 409/412 path.
     let writes = 0
     await pageOne.route('**/kv/**', async (route) => {

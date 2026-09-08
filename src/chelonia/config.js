@@ -3,14 +3,16 @@ import '@chelonia/lib'
 import manifestsFile from '../contracts/manifests.json'
 import './state.js'
 
+// TODO: BEGIN REMOVEME (okTurtles/chel#160)
 // This is Group Income's identity contract name, but the contract is our own,
 // in src/contracts/identity.js. chel only lets a contract with this exact name
 // be created without an account to bill it to, and only registers a username
-// for that type, so an app with its own signup has no choice yet.
-// TODO: rename once okTurtles/chel#160 lands.
+// for that type, so an app with its own signup has no choice yet. Rename it
+// once the fix is released.
+// TODO: END REMOVEME (okTurtles/chel#160)
 export const CONTRACT_NAME = 'gi.contracts/identity'
 
-// A list is created by an identity, so the relay knows which account to bill it
+// A list is created by an identity, so the server knows which account to bill it
 // to and the name is ours to pick.
 export const LIST_CONTRACT_NAME = 'todomvc/list'
 

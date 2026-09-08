@@ -43,12 +43,12 @@ export class AuthError extends Error {
   }
 }
 
-// Copied from NAME_REGEX in chel's src/serve/routes.ts. The relay rejects
+// TODO: BEGIN REMOVEME (copy of chel's private NAME_REGEX, until chel exports it)
+// Copied from NAME_REGEX in chel's src/serve/routes.ts. The server rejects
 // anything else with a 400, so check here first to give a usable message.
 // Lowercase only, cannot start or end with - or _, and no repeated separator.
-// TODO: drop this once a @chelonia/cli release makes the rule available
-// instead of having to be copied.
 const USERNAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/
+// TODO: END REMOVEME (copy of chel's private NAME_REGEX, until chel exports it)
 
 function assertUsername (username) {
   if (!USERNAME_REGEX.test(username)) {
@@ -97,7 +97,7 @@ async function registerSalt (username, password) {
   const r = toBase64url(keyPair.publicKey)
   const path = `/zkpp/register/${encodeURIComponent(username)}`
 
-  // This is where a taken username is caught: the relay looks the name up
+  // This is where a taken username is caught: the server looks the name up
   // before it will issue a registration key.
   const challenge = await send(path, form({ b: hash(r) }))
   if (challenge.status === 409) throw new AuthError('That username is already taken.')
@@ -131,14 +131,16 @@ async function retrieveSalt (identityContractID, password) {
   return contractSalt
 }
 
-// TODO: replace with the @chelonia/lib selector once okTurtles/libcheloniajs#90
-// lands.
+// TODO: BEGIN REMOVEME (okTurtles/libcheloniajs#90)
+// Replaced by `chelonia/out/nameToContractID` once a @chelonia/lib release has
+// it. The call in login() changes with it.
 async function lookupUsername (username) {
   const response = await send(`/name/${encodeURIComponent(username)}`)
   if (response.status === 404) return null
   if (!response.ok) throw new AuthError(`Username lookup failed: ${response.status}`)
   return response.text()
 }
+// TODO: END REMOVEME (okTurtles/libcheloniajs#90)
 
 export async function signup ({ username, password }) {
   assertUsername(username)
@@ -174,8 +176,8 @@ export async function signup ({ username, password }) {
       signingKeyId: keyId(IPK),
       actionSigningKeyId: keyId(CSK),
       actionEncryptionKeyId: keyId(CEK),
-      // TODO: shorten once @chelonia/lib has a helper for building a key set,
-      // okTurtles/libcheloniajs#91.
+      // TODO (okTurtles/libcheloniajs#91): shorten this once @chelonia/lib has
+      // a helper for building a key set.
       keys: [
         {
           id: keyId(IPK),
@@ -232,10 +234,13 @@ export async function signup ({ username, password }) {
       data: { attributes: { username } }
     })
   } catch (e) {
+    // TODO: BEGIN REMOVEME (okTurtles/libcheloniajs#94)
     // No way to tell the user why yet. chel sends error bodies as plain text
     // and publishEvent does `(await r.json()).message`, so the parse throws and
     // the status is lost: a disabled signup and a rate limit both arrive here
-    // as a JSON SyntaxError.
+    // as a JSON SyntaxError. Once a release carries the status on `cause`,
+    // 403 and 429 get their own messages here.
+    // TODO: END REMOVEME (okTurtles/libcheloniajs#94)
     throw new AuthError('Could not create the account.', { cause: e })
   } finally {
     sbp('chelonia/clearTransientSecretKeys', [keyId(IPK), keyId(IEK)])

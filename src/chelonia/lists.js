@@ -284,7 +284,7 @@ export async function acceptInvite ({ contractID, secret }) {
       innerSigningKeyId: keyIdByName(identityState, 'csk'),
       encryptionKeyId: keyIdByName(identityState, 'cek'),
       innerEncryptionKeyId: keyIdByName(state[contractID], 'cek'),
-      // Keeps the relay from seeing which two contracts are being connected.
+      // Keeps the server from seeing which two contracts are being connected.
       encryptKeyRequestMetadata: true
     })
   } finally {

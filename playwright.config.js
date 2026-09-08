@@ -6,10 +6,10 @@ export default defineConfig({
   testDir: './test/e2e',
   testMatch: '*.spec.mjs',
   // Signup derives two keys with scrypt and every todo is a round trip to the
-  // relay, so the default 30s is not enough on a cold run.
+  // server, so the default 30s is not enough on a cold run.
   timeout: 90_000,
   expect: { timeout: 20_000 },
-  // One relay, one database. Running specs in parallel against it makes
+  // One server, one database. Running specs in parallel against it makes
   // failures hard to read for no real gain at this size.
   workers: 1,
   fullyParallel: false,
@@ -21,8 +21,8 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],
   webServer: {
     // The app has to be rebuilt so the manifest CID it was built with matches
-    // the contract the relay uploads.
-    command: 'npm run build && node test/e2e/relay.mjs',
+    // the contract the server uploads.
+    command: 'npm run build && node test/e2e/server.mjs',
     url: `http://127.0.0.1:${PORT}/app/`,
     timeout: 180_000,
     reuseExistingServer: false

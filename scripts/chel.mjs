@@ -18,13 +18,12 @@ const CHEL_BIN = path.join(
   typeof bin === 'string' ? bin : bin.chel
 )
 
+// TODO: BEGIN REMOVEME (okTurtles/chel#150)
 // The @chelonia/cli 3.4.0 binary is compiled with `--allow-write=./`, so it
 // cannot write Deno's plug cache to fetch the SQLite3 library and every command
 // fails with "Failed to load SQLite3 Dynamic Library". Pointing
-// DENO_SQLITE_PATH at the system library skips the download.
-// TODO: delete this whole block once a @chelonia/cli release ships
-// okTurtles/chel#162, which replaces the FFI SQLite driver with better-sqlite3
-// and so removes the runtime library load entirely (okTurtles/chel#150).
+// DENO_SQLITE_PATH at the system library skips the download. Fixed by
+// okTurtles/chel#162, so this block goes once a release with it is out.
 //
 // These paths are conventional, not guaranteed, so on Linux take the first one
 // that is actually there. On macOS the system libraries live in the dyld shared
@@ -44,11 +43,14 @@ const found = process.platform === 'darwin'
   ? candidates[0]
   : candidates.find((p) => existsSync(p))
 const DENO_SQLITE_PATH = process.env.DENO_SQLITE_PATH ?? found ?? ''
+// TODO: END REMOVEME (okTurtles/chel#150)
 
 export function chel (args) {
   const { status, signal } = spawnSync(process.execPath, [CHEL_BIN, ...args], {
     stdio: 'inherit',
+    // TODO: BEGIN REMOVEME (okTurtles/chel#150)
     env: { ...process.env, DENO_SQLITE_PATH }
+    // TODO: END REMOVEME (okTurtles/chel#150)
   })
   if (status !== 0) {
     throw new Error(`chel ${args.join(' ')} exited with ${status ?? signal}`)

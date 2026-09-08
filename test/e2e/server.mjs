@@ -1,4 +1,4 @@
-// Starts a chel relay for the e2e run, on its own port and its own database so
+// Starts a chel server for the e2e run, on its own port and its own database so
 // it cannot touch the one `npm run serve` uses.
 //
 // chel reads chel.toml from the working directory and resolves the sqlite path

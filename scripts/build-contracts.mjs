@@ -16,9 +16,10 @@ import process from 'node:process'
 import { chel } from './chel.mjs'
 
 const CONTRACTS = [
-  // TODO: rename once the fix for okTurtles/chel#160 is merged and released.
-  // Until then chel only accepts a contract created without an account to bill
-  // it to when the manifest name is exactly this.
+  // TODO: BEGIN REMOVEME (okTurtles/chel#160)
+  // Until the fix is released, chel only accepts a contract created without an
+  // account to bill it to when the manifest name is exactly this. Rename then.
+  // TODO: END REMOVEME (okTurtles/chel#160)
   { name: 'gi.contracts/identity', file: 'identity.js' },
   // A list is created by an identity, so it is attributed and its name is free.
   { name: 'todomvc/list', file: 'list.js' }
@@ -75,7 +76,7 @@ for (const { name, file } of CONTRACTS) {
 
   // Editing a contract without bumping the version would give the same version
   // a new manifest CID. The app would be rebuilt against it while every
-  // contract already on the relay still points at the old one, and those
+  // contract already on the server still points at the old one, and those
   // accounts would stop loading. Better to say so than to let it happen
   // quietly.
   if (existsSync(pinnedSource) && !source.equals(await readFile(pinnedSource))) {

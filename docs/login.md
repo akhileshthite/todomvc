@@ -14,7 +14,7 @@ ever stored:
 
 ## Signup
 
-1. Register a salt against `/zkpp/register/:username`. The relay gets a blinded
+1. Register a salt against `/zkpp/register/:username`. The server gets a blinded
    hash, never the password, and returns a salt plus a one-time token.
 2. Derive `ipk` and `iek` from the password and that salt.
 3. Generate the everyday keys, `csk`, `cek` and `#sak`. Their secret halves go
@@ -36,7 +36,7 @@ ever stored:
 5. Discard the `iek`.
 6. Load the `lists` slot and open each list in it.
 
-A wrong password comes back from the relay as a 500, not as a clean failure, so
+A wrong password comes back from the server as a 500, not as a clean failure, so
 the app tells a bad password apart from a connection problem by whether the
 server answered at all.
 

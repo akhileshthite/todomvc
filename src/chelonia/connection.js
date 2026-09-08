@@ -7,7 +7,7 @@ import {
   PUBSUB_RECONNECTION_SUCCEEDED
 } from '@chelonia/lib/pubsub'
 
-// The socket is the only thing that says the relay went away mid-session.
+// The socket is the only thing that says the server went away mid-session.
 // Reads keep working off the mirror, so without this the app looks fine while
 // every write fails.
 export const connection = reactive({ online: true })

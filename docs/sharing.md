@@ -10,8 +10,8 @@ anywhere in Chelonia, so here is what each one is for:
 | name | what it does |
 | --- | --- |
 | `csk` | signs what the contract writes, so any client can check who wrote it |
-| `cek` | encrypts payloads, so the relay stores them without being able to read them |
-| `#sak` | what the relay checks before it will serve `/kv/:contractID/:key` |
+| `cek` | encrypts payloads, so the server stores them without being able to read them |
+| `#sak` | what the server checks before it will serve `/kv/:contractID/:key` |
 
 A fourth thing to know: a key stored inside a contract can carry a flag called
 `shareable`. When someone asks a contract for access, Chelonia answers with the
@@ -21,10 +21,10 @@ rule.
 ## Creating a list
 
 A list is a new contract, so it needs its own three keys and its own place on
-the relay.
+the server.
 
 `chelonia/out/registerContract`, with `publishOptions.billableContractID` set to
-the account's identity contract so the relay knows who pays for the new one.
+the account's identity contract so the server knows who pays for the new one.
 Only an identity contract may be created without that.
 
 Each of the list's three secrets is stored inside the list contract, encrypted
@@ -52,7 +52,7 @@ contract rather than minting a second one.
 
 `chelonia/out/keyRequest`, signed with the invite key. It writes two messages: a
 reply key onto the joiner's identity contract, and `OP_KEY_REQUEST` onto the
-list. `encryptKeyRequestMetadata: true` keeps the relay from seeing which two
+list. `encryptKeyRequestMetadata: true` keeps the server from seeing which two
 contracts are being connected.
 
 The list ID goes into the joiner's `lists` slot straight away, before any answer
@@ -64,7 +64,7 @@ Chelonia does this part on its own. The owner's client processes the
 `OP_KEY_REQUEST` and queues `chelonia/private/respondToAllKeyRequests`, which
 replies with every key marked `shareable`. No app code is involved.
 
-The relay cannot stand in for the owner, so the owner has to be online with the
+The server cannot stand in for the owner, so the owner has to be online with the
 app open. Until then the request sits on the contract and the joiner sees the
 list waiting.
 

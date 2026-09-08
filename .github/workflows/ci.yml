@@ -27,14 +27,16 @@ jobs:
 
       - run: npm ci
 
-      # chel cannot fetch its own SQLite library (okTurtles/chel#150), so
-      # scripts/chel.mjs points it at the system one. Usually already present.
+      # TODO: BEGIN REMOVEME (okTurtles/chel#150)
+      # chel cannot fetch its own SQLite library, so scripts/chel.mjs points it
+      # at the system one. Usually already present.
       - name: Make sure the system SQLite library is there
         run: |
           if [ ! -f /usr/lib/x86_64-linux-gnu/libsqlite3.so.0 ]; then
             sudo apt-get update
             sudo apt-get install -y libsqlite3-0
           fi
+      # TODO: END REMOVEME (okTurtles/chel#150)
 
       - run: npx playwright install --with-deps chromium
 
@@ -42,7 +44,7 @@ jobs:
 
       - run: npm test
 
-      # Builds the app and starts a relay on its own port and database.
+      # Builds the app and starts a server on its own port and database.
       - run: npm run test:e2e
 
       - uses: actions/upload-artifact@v4

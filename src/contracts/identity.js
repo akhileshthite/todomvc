@@ -7,10 +7,12 @@
 // the contract provides is what KV cannot: an object on the server that owns
 // the keys and gives `/kv/:contractID/:key` its scope.
 //
-// The name has to be `gi.contracts/identity`. chel's POST /event only accepts a
-// contract created without an account to bill it to when the manifest name is
-// that, and only registers a username for a contract of that type. See
-// src/serve/routes.ts in okTurtles/chel.
+// TODO: BEGIN REMOVEME (okTurtles/chel#160)
+// The name has to be `gi.contracts/identity`, here and on the action below.
+// chel's POST /event only accepts a contract created without an account to
+// bill it to when the manifest name is that, and only registers a username for
+// a contract of that type. See src/serve/routes.ts in okTurtles/chel.
+// TODO: END REMOVEME (okTurtles/chel#160)
 
 sbp('chelonia/defineContract', {
   name: 'gi.contracts/identity',
