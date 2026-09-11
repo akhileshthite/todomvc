@@ -44,3 +44,38 @@ server answered at all.
 
 None of the above. The secrets and the contract state are already in the saved
 blob, so it only re-syncs.
+
+## Changing the password
+
+1. Prove the current password against `/zkpp/:contractID/auth_hash`, as at
+   login.
+2. `POST /zkpp/:contractID/updatePasswordHash` with that proof and the new
+   password's hash, encrypted to the proof's shared secret
+   (`buildUpdateSaltRequestEc`). The answer is the old contract salt and a
+   one-time token.
+3. Derive the old `ipk` and `iek` from the old password and salt, and the new
+   ones from the new password and the new salt.
+4. `chelonia/out/keyUpdate`, signed by the old `ipk`, with the token in the
+   `shelter-salt-update-token` header. `ipk` and `iek` are replaced. `csk`,
+   `cek` and `#sak` keep their keys and only get their secrets encrypted again
+   to the new `iek`, so nothing already on the contract has to be rewritten.
+5. Publish the deletion token again, encrypted to the new `iek`.
+6. Discard all four password keys.
+
+## Deleting the account
+
+Signup sends `shelter-deletion-token-digest`, the hash of a random token, and
+keeps the token itself in the contract encrypted to the `iek`. So deleting
+takes the password.
+
+1. Prove the password and derive the `iek`, as at login.
+2. Decrypt the token out of `attributes.encryptedDeletionToken`.
+3. `chelonia/out/deleteContract` with the token. The server answers 202 and
+   deletes the contract in the background, together with every list this
+   account created. Lists joined through an invite belong to whoever made them
+   and stay.
+4. Log out locally.
+
+The username is not freed. chel 3.4.0 keeps the name pointing at the deleted
+contract and only lists it as orphaned, so signing up with the same name again
+is refused as taken until the server cleans those up.

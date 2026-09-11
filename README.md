@@ -38,7 +38,12 @@ scripts, and the files the first run creates, are listed in
    of the contract.
 7. Share a list: press **Share**, open the link in a private window, sign up
    there and join. Keep the first window open, it is the one that answers.
-8. Look at what the server actually has:
+8. Change your password from the **account** link at the bottom, then log out
+   and in with the new one. The same panel deletes the account, along with
+   the lists it created.
+9. Stop the server with Ctrl-C and keep adding todos. They show up straight
+   away and wait; start the server again and they go through.
+10. Look at what the server actually has:
 
    ```bash
    chel eventsAfter <contract-id> 0

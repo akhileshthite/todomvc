@@ -46,3 +46,16 @@ declared slot at `rootState._kv[contractID][key]` and updates it from four
 places: the first load, a push from another client, our own write, and a
 refetch after the socket reconnects. That state object is a Vue `reactive()`,
 so a `computed` over it reruns on all four and the list redraws by itself.
+
+## Offline
+
+`chelonia/kv/update` needs the server, so while the socket is down a write goes
+into Chelonia's persistent action queue instead (`src/chelonia/offline.js`).
+The queue stores `[selector, ...args]` as JSON, which is why writes are named
+(`'addTodo'`, `'setTitle'`, ...) and the reducer is looked up when the write
+runs. The queue lives under one localStorage key, so it survives a reload, and
+`retryAll` is called as soon as the socket is back.
+
+Until a write lands, `currentTodos` applies it on top of the mirror value, so
+the list looks the same offline as it will once the server has it. A write that
+lands is removed from that overlay on `PERSISTENT_ACTION_SUCCESS`.

@@ -6,10 +6,11 @@ import {
   PUBSUB_RECONNECTION_SCHEDULED,
   PUBSUB_RECONNECTION_SUCCEEDED
 } from '@chelonia/lib/pubsub'
+import { retryPendingWrites } from './offline.js'
 
 // The socket is the only thing that says the server went away mid-session.
-// Reads keep working off the mirror, so without this the app looks fine while
-// every write fails.
+// Reads keep working off the mirror, so without this the app would not know
+// to queue writes instead of sending them.
 export const connection = reactive({ online: true })
 
 export function watchConnection () {
@@ -23,5 +24,6 @@ export function watchConnection () {
   // Also fires on the first open, not just on a reconnect.
   sbp('okTurtles.events/on', PUBSUB_RECONNECTION_SUCCEEDED, () => {
     connection.online = true
+    retryPendingWrites()
   })
 }

@@ -82,7 +82,6 @@ button.primary {
 button[type='submit']:disabled,
 button.primary:disabled { opacity: 0.5; cursor: default; }
 
-/* Read only while the server is unreachable. */
 input:disabled,
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -137,6 +136,31 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   color: var(--accent);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
+
+/* Account */
+
+.account {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.account h2 {
+  margin: 0;
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 18px;
+  font-weight: 400;
+}
+
+.account-message {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  text-align: center;
+}
+
+.account > .link { align-self: center; background: var(--bg); }
 
 /* Joining a shared list */
 
