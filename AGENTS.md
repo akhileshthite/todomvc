@@ -13,6 +13,7 @@ src/chelonia/lists.js       creating a list, inviting, joining
 src/chelonia/lists-model.js the lists schema and its one reducer, both pure
 src/chelonia/todos.js       the todos slot and the six writes
 src/chelonia/todos-model.js the schema and the reducers, both pure
+src/chelonia/offline.js     the queue for writes made while the server is away
 src/components/             Vue, and nothing else
 scripts/build-contracts.mjs chel manifest -> chel pin -> manifest CID
 scripts/chel.mjs            runs chel from node_modules, see below
@@ -45,8 +46,16 @@ database backend, and a `server_id` the server refuses to start without).
 `chel init` generates it with the in-memory backend, which loses every account
 on restart, so the script switches it to sqlite under `data/`.
 
+`npm run serve` runs the real server as a child of `scripts/chel.mjs`, so
+killing the node process alone leaves it up. Stop it through the port:
+`lsof -ti:8000 | xargs kill`.
+
 After a full rebuild, restart `npm run serve`. Vite empties `dist/` and a
 server that was already running answers 404 until it is restarted.
+
+The app is built with `LIGHTWEIGHT_CLIENT=true` (see `vite.config.js`), the
+same as Group Income: the browser keeps no message log, and Chelonia reads each
+contract's HEAD from the saved state.
 
 The contract version comes from `version` in `package.json`. Editing a contract
 without bumping it makes the build stop, since the app would then be built

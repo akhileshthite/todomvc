@@ -6,6 +6,7 @@ import {
   createTodo,
   currentTodos,
   destroyTodo,
+  pendingCount,
   renameTodo,
   setTodoCompleted,
   todosStatus
@@ -42,10 +43,9 @@ const remaining = computed(() => todos.value.filter((todo) => !todo.completed).l
 const loading = computed(() => todosStatus(props.listId) === 'loading')
 // The mirror still holds the last good value, so the list stays on screen.
 const stale = computed(() => todosStatus(props.listId) === 'error')
-// Nothing is queued while the server is unreachable, so a change made now is
-// simply lost. Rather than let people pile up work that gets thrown away, the
-// list goes read only and stays readable.
-const readOnly = computed(() => !connection.online)
+const offline = computed(() => !connection.online)
+// Writes queued for the server, shown on top of the list until they land.
+const waiting = computed(() => pendingCount(props.listId))
 
 function readFilter () {
   const name = window.location.hash.replace(/^#\/?/, '')
@@ -78,13 +78,12 @@ async function run (write) {
 
 function add () {
   const title = newTitle.value.trim()
-  if (!title || readOnly.value) return
+  if (!title) return
   newTitle.value = ''
   run(() => createTodo(props.listId, title))
 }
 
 function startEditing (todo) {
-  if (readOnly.value) return
   editingId.value = todo.id
   editTitle.value = todo.title
   nextTick(() => editInput.value?.[0]?.focus())
@@ -92,9 +91,7 @@ function startEditing (todo) {
 
 function finishEditing () {
   const id = editingId.value
-  // Disabling the input fires blur. Keep the edit open and the typing intact
-  // until the connection is back, instead of discarding it.
-  if (id === null || readOnly.value) return
+  if (id === null) return
   const title = editTitle.value.trim()
   editingId.value = null
   run(() => (title ? renameTodo(props.listId, id, title) : destroyTodo(props.listId, id)))
@@ -110,15 +107,17 @@ function finishEditing () {
         class="new-todo"
         placeholder="What needs to be done?"
         :maxlength="MAX_TITLE_LENGTH"
-        :disabled="readOnly"
         autofocus
         @keyup.enter="add"
       >
     </header>
 
-    <p v-if="readOnly" class="todo-notice">
-      Not connected to the server, so the list is read only right now. It will
-      be editable again once the connection is back.
+    <p v-if="offline" class="todo-notice">
+      Not connected to the server. Changes are kept here and sent once it is
+      back<template v-if="waiting">, {{ waiting }} waiting so far</template>.
+    </p>
+    <p v-else-if="waiting" class="todo-status">
+      Sending {{ waiting }} {{ waiting === 1 ? 'change' : 'changes' }}&hellip;
     </p>
     <p v-if="error" class="todo-error">{{ error }}</p>
     <p v-else-if="stale" class="todo-error">
@@ -132,7 +131,6 @@ function finishEditing () {
         <input
           type="checkbox"
           :checked="remaining === 0"
-          :disabled="readOnly"
           @change="run(() => completeAllTodos(listId, remaining !== 0))"
         >
         Mark all as complete
@@ -149,14 +147,12 @@ function finishEditing () {
               class="toggle"
               type="checkbox"
               :checked="todo.completed"
-              :disabled="readOnly"
               @change="run(() => setTodoCompleted(listId, todo.id, !todo.completed))"
             >
             <label @dblclick="startEditing(todo)">{{ todo.title }}</label>
             <button
               class="destroy"
               title="Delete"
-              :disabled="readOnly"
               @click="run(() => destroyTodo(listId, todo.id))"
             >
               &times;
@@ -168,7 +164,6 @@ function finishEditing () {
             v-model="editTitle"
             class="edit"
             :maxlength="MAX_TITLE_LENGTH"
-            :disabled="readOnly"
             @blur="finishEditing"
             @keyup.enter="finishEditing"
             @keyup.escape="editingId = null"
@@ -189,7 +184,6 @@ function finishEditing () {
           v-if="remaining < todos.length"
           type="button"
           class="link clear-completed"
-          :disabled="readOnly"
           @click="run(() => clearCompletedTodos(listId))"
         >
           Clear completed

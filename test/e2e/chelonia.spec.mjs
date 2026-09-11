@@ -2,7 +2,7 @@
 // go through the KV slot, and two browsers really converge.
 
 import { expect, test } from '@playwright/test'
-import { PASSWORD, addTodo, items, login, newUsername, signup, titles } from './helpers.mjs'
+import { PASSWORD, addTodo, login, newUsername, signup, titles } from './helpers.mjs'
 
 test('a session survives a reload', async ({ page }) => {
   await signup(page)
@@ -107,33 +107,25 @@ test('a username the server would reject is caught before any request', async ({
   expect(requested).toBe(false)
 })
 
-test('the list goes read only while the server is unreachable', async ({ page, context }) => {
+test('a change made while the server is unreachable is sent once it is back', async ({ page, context }) => {
   await signup(page)
   await addTodo(page, 'written while connected')
 
   await context.setOffline(true)
+  await expect(page.locator('.todo-notice')).toContainText('Not connected')
 
-  // Nothing is queued, so a change made now would be lost. The controls are
-  // disabled rather than left to fail one by one.
-  await expect(page.locator('.todo-notice')).toContainText('read only')
-  await expect(page.locator('.new-todo')).toBeDisabled()
-  await expect(items(page).first().locator('.toggle')).toBeDisabled()
-  await expect(page.locator('.toggle-all input')).toBeDisabled()
-
-  // Reading still works: the list and the filters are untouched.
-  await expect(titles(page)).toHaveText(['written while connected'])
-  await page.locator('.filters a', { hasText: 'Active' }).click()
-  await expect(titles(page)).toHaveText(['written while connected'])
+  // Still editable. The change shows at once and waits in the queue.
+  await addTodo(page, 'written while offline')
+  await expect(titles(page)).toHaveText(['written while connected', 'written while offline'])
+  await expect(page.locator('.todo-notice')).toContainText('1 waiting')
 
   await context.setOffline(false)
-
   await expect(page.locator('.todo-notice')).toBeHidden()
-  await expect(page.locator('.new-todo')).toBeEnabled()
-  await addTodo(page, 'written after reconnecting')
-  await expect(titles(page)).toHaveText([
-    'written while connected',
-    'written after reconnecting'
-  ])
+  await expect(page.locator('.todo-status')).toBeHidden()
+
+  // Nothing is queued any more, so this is what the server has.
+  await page.reload()
+  await expect(titles(page)).toHaveText(['written while connected', 'written while offline'])
 })
 
 test('two browsers on the same account converge', async ({ browser }) => {

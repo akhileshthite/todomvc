@@ -21,7 +21,12 @@ export default defineConfig(({ mode }) => ({
     // @chelonia/lib reads process.env at module scope. Replacing the whole
     // object avoids having to track which flags it reads.
     'process.env': JSON.stringify({
-      NODE_ENV: mode === 'production' ? 'production' : 'development'
+      NODE_ENV: mode === 'production' ? 'production' : 'development',
+      // A browser keeps no copy of the message log, so Chelonia takes each
+      // contract's HEAD from the saved state instead of a local database.
+      // Without this the log is an empty map after a reload, and the first
+      // new event on a contract fails with "No latest HEAD".
+      LIGHTWEIGHT_CLIENT: 'true'
     })
   }
 }))
